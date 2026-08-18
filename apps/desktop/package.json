@@ -1,0 +1,5 @@
+{
+  "name": "@lecta/desktop",
+  "private": true,
+  "type": "module"
+}

@@ -1,0 +1,13 @@
+packages:
+  - apps/*
+  - packages/*
+  - workers/*
+
+allowBuilds:
+  onnxruntime-node: true
+  protobufjs: false
+  sharp: false
+
+onlyBuiltDependencies:
+  - electron
+  - onnxruntime-node

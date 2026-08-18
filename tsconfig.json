@@ -1,0 +1,31 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "useDefineForClassFields": true,
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "module": "ESNext",
+    "moduleResolution": "Bundler",
+    "allowImportingTsExtensions": false,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "skipLibCheck": true,
+    "jsx": "react-jsx",
+    "paths": {
+      "@lecta/domain": ["./packages/domain/src/index.ts"],
+      "@lecta/application": ["./packages/application/src/index.ts"],
+      "@lecta/infrastructure": ["./packages/infrastructure/src/index.ts"],
+      "@lecta/recording": ["./packages/recording/src/index.ts"],
+      "@lecta/transcription": ["./packages/transcription/src/index.ts"],
+      "@lecta/ai": ["./packages/ai/src/index.ts"],
+      "@lecta/shared": ["./packages/shared/src/index.ts"]
+    },
+    "types": ["node", "vite/client", "vitest/globals"]
+  },
+  "include": ["apps", "packages", "workers", "tests", "*.ts"]
+}

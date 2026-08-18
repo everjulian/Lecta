@@ -1,0 +1,63 @@
+# Dependencies and generated application output
+node_modules/
+dist/
+build/
+out/
+.vite/
+*.tsbuildinfo
+
+# Local configuration and secrets
+.env
+.env.*
+!.env.example
+.npmrc
+*.pem
+*.key
+credentials*.json
+secrets*.json
+
+# Local databases and Electron user data
+*.db
+*.db-*
+*.sqlite
+*.sqlite3
+userData/
+userdata/
+.electron/
+
+# Recordings, audio and locally downloaded ML artifacts
+recordings/
+audio/
+models/
+embeddings/
+*.webm
+*.wav
+*.mp3
+*.m4a
+*.ogg
+*.flac
+
+# Tests and diagnostics
+coverage/
+playwright-report/
+test-results/
+blob-report/
+.playwright/
+*.log
+logs/
+
+# Temporary files and operating systems
+.cache/
+.tmp/
+tmp/
+temp/
+*.tmp
+*.swp
+.DS_Store
+Thumbs.db
+
+# IDE-local settings
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.example.json

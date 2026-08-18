@@ -1,0 +1,42 @@
+{
+  "name": "lecta",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "dist/electron/main/index.js",
+  "packageManager": "pnpm@11.16.0",
+  "scripts": {
+    "dev": "pnpm build && electron .",
+    "start": "electron .",
+    "build": "vite build --config apps/desktop/vite.config.ts && vite build --config apps/desktop/vite.main.config.ts && vite build --config apps/desktop/vite.preload.config.ts",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "setup:transcription": "powershell -ExecutionPolicy Bypass -File scripts/setup-transcription.ps1"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.2.0",
+    "@vitejs/plugin-react": "latest",
+    "electron": "latest",
+    "react": "latest",
+    "react-dom": "latest",
+    "vite": "latest"
+  },
+  "devDependencies": {
+    "@eslint/js": "latest",
+    "@types/node": "latest",
+    "@types/react": "latest",
+    "@types/react-dom": "latest",
+    "eslint": "latest",
+    "eslint-config-prettier": "latest",
+    "eslint-plugin-react-hooks": "latest",
+    "eslint-plugin-react-refresh": "latest",
+    "globals": "latest",
+    "prettier": "latest",
+    "typescript": "^6.0.0",
+    "typescript-eslint": "latest",
+    "vitest": "latest"
+  }
+}
