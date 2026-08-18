@@ -31,8 +31,19 @@ import {
   type AIProvider,
 } from '@lecta/ai';
 import { KnowledgeWorkerClient } from '../../../workers/knowledge-worker/src/knowledge-worker-client';
+import type { TranscriptionProvider } from '@lecta/transcription';
+import type { E2EConfig } from './e2e/e2e-config';
+import {
+  FakeAIProvider,
+  FakeKnowledgeWorker,
+  FakeTranscriptionProvider,
+} from './e2e/fake-providers';
 
-export function createContainer(userDataPath: string, appPath: string) {
+export function createContainer(
+  userDataPath: string,
+  appPath: string,
+  options: { readonly e2e?: E2EConfig } = {},
+) {
   const databasePath = path.join(userDataPath, 'lecta.sqlite');
   const sessions = new SqliteSessionRepository(databasePath);
   const transcriptionStore = new SqliteTranscriptionStore(databasePath);
@@ -43,19 +54,22 @@ export function createContainer(userDataPath: string, appPath: string) {
   const preferences = new FilePreferenceStore(userDataPath);
   const logger = new NullLogger();
   const shared = { sessions, clock: new SystemClock(), logger };
+  const transcriptionProvider: TranscriptionProvider = options.e2e
+    ? new FakeTranscriptionProvider(options.e2e.scenario)
+    : new FasterWhisperProvider(
+        process.env['LECTA_PYTHON_PATH'] ??
+          path.join(userDataPath, 'runtime', 'Scripts', 'python.exe'),
+        path.join(appPath, 'dist', 'transcription-worker', 'worker.py'),
+      );
   const transcriptionQueue = new TranscriptionQueue({
     jobs: transcriptionStore,
     transcripts: transcriptionStore,
-    provider: new FasterWhisperProvider(
-      process.env['LECTA_PYTHON_PATH'] ??
-        path.join(userDataPath, 'runtime', 'Scripts', 'python.exe'),
-      path.join(appPath, 'dist', 'transcription-worker', 'worker.py'),
-    ),
+    provider: transcriptionProvider,
     modelDirectory: path.join(userDataPath, 'models', 'faster-whisper'),
     generateId: () => crypto.randomUUID(),
     now: () => new Date(),
   });
-  const aiProvider = createAIProvider();
+  const aiProvider = options.e2e ? new FakeAIProvider(options.e2e.scenario) : createAIProvider();
   const generateStructuredNotes = new GenerateStructuredNotes({
     provider: aiProvider,
     notes: structuredNotes,
@@ -63,13 +77,15 @@ export function createContainer(userDataPath: string, appPath: string) {
     generateId: () => crypto.randomUUID(),
     now: () => new Date(),
   });
-  const knowledgeWorker = new KnowledgeWorkerClient({
-    entrypoint: path.join(appPath, 'dist', 'knowledge-worker', 'index.js'),
-    databasePath,
-    modelDirectory: path.join(userDataPath, 'models', 'embeddings'),
-    model: process.env['LECTA_EMBEDDING_MODEL'] ?? 'Xenova/multilingual-e5-small',
-    logger,
-  });
+  const knowledgeWorker = options.e2e
+    ? new FakeKnowledgeWorker(sessions, options.e2e.scenario)
+    : new KnowledgeWorkerClient({
+        entrypoint: path.join(appPath, 'dist', 'knowledge-worker', 'index.js'),
+        databasePath,
+        modelDirectory: path.join(userDataPath, 'models', 'embeddings'),
+        model: process.env['LECTA_EMBEDDING_MODEL'] ?? 'Xenova/multilingual-e5-small',
+        logger,
+      });
   const indexKnowledge = {
     execute: (signal?: AbortSignal) => knowledgeWorker.index(signal),
   };

@@ -9,16 +9,16 @@
 
 Lecta conserva una dirección de dependencias saludable y protege correctamente el dominio de Electron, React, SQLite y proveedores. La grabación incremental, la cola de transcripción y los artefactos derivados son buenas decisiones. No se identificó una vulnerabilidad crítica explotable con la superficie actual.
 
-Todavía no debe considerarse release-ready. Faltan E2E real, accesibilidad automatizada y otras tareas detalladas abajo. Desde la auditoría inicial, H1 fue corregido: la búsqueda vectorial ejecuta inferencia y ranking lineal en un child process medido, sin bloquear Electron main. La UI funciona, pero `App`, `HomeView` y una hoja CSS de 965 líneas concentran demasiadas responsabilidades.
+Todavía no debe considerarse release-ready por las tareas medias y bajas detalladas abajo. Desde la auditoría inicial, H1 fue corregido: la búsqueda vectorial ejecuta inferencia y ranking lineal en un child process medido, sin bloquear Electron main. H4 también fue resuelto con Playwright Electron, diez escenarios offline y auditoría axe en tres superficies. La UI funciona, pero `App`, `HomeView` y una hoja CSS extensa concentran demasiadas responsabilidades.
 
 | Área            | Puntuación /10 | Evidencia resumida                                                                 |
 | --------------- | -------------: | ---------------------------------------------------------------------------------- |
 | Architecture    |              8 | Capas claras; worker semántico aislado y reiniciable                               |
 | Code Quality    |              7 | strict, sin `any`, `@ts-ignore` ni logging disperso; componentes/archivos grandes  |
-| Testing         |              5 | 39 unit/integration tests; cero E2E, visual regression o fallos UI automatizados   |
+| Testing         |              8 | 48 unit/integration y 10 E2E Electron; falta regresión visual dedicada             |
 | Security        |              7 | aislamiento, sandbox, CSP e IPC explícito; permisos/navegación e inputs mejorables |
 | Performance     |              7 | paginación/FTS/chunks; vector scan aislado y benchmark reproducible                |
-| Accessibility   |              4 | labels y roles parciales; sin axe, focus trap, Escape ni prueba teclado completa   |
+| Accessibility   |              7 | axe en Home/modal/sesión y tabs semánticas; falta prueba completa solo con teclado |
 | Design System   |              3 | lenguaje visual coherente, pero sin tokens/componentes base y ~80 colores hex      |
 | Maintainability |              6 | paquetes pequeños en backend; `HomeView`, `App` y CSS concentran cambios           |
 | Scalability     |              6 | 1.000 sesiones razonables para biblioteca; 10.000 penalizan vectores y filesystem  |
@@ -102,13 +102,13 @@ No se confirmaron problemas CRITICAL. La auditoría no simuló corrupción físi
 - Importancia: IPC es un límite de confianza incluso en una aplicación local.
 - Recomendación: validadores acotados y pruebas negativas; posteriormente cuota configurable de almacenamiento. Corrección segura de inputs incluida; la cuota requiere diseño de producto.
 
-### H4 — No existe E2E ni auditoría automática de accesibilidad
+### H4 — Resuelto: E2E Electron y auditoría automática de accesibilidad
 
 - Ubicación: configuración/tests del repositorio.
-- Problema: Vitest cubre dominio, stores, queue y adapters, pero no inicia Electron ni prueba renderer + preload + IPC + persistencia. No hay Playwright, axe ni snapshots.
-- Impacto: regresiones en empaquetado, preload, canales, teclado y wiring pueden pasar con 48 tests unit/integration verdes.
-- Importancia: los siete flujos críticos cruzan procesos y no quedan certificados por tests unitarios.
-- Recomendación: añadir Playwright Electron con `LECTA_E2E=1`, userData temporal y adapters fixture. No activar audio/Whisper/red. Añadir `@axe-core/playwright`. Requiere un ADR/fixture seam antes de implementarse para no contaminar producción.
+- Evidencia: `tests/e2e/lecta.spec.ts` ejecuta diez pruebas que cubren los siete flujos solicitados, incluyendo persistencia tras reinicio y cuatro fallos recuperables.
+- Aislamiento: `LECTA_E2E=1` solo se acepta en main no empaquetado, cada prueba usa `userData` temporal y los adapters fixture no usan micrófono, loopback, Python, Whisper, modelos, APIs ni red.
+- Accesibilidad: `@axe-core/playwright` valida Home, diálogo y sesión completada. Como correcciones derivadas se ajustó contraste y se añadieron roles/relaciones de tabs y tabpanels.
+- CI: job E2E independiente, serial y offline con traces/screenshots únicamente en fallo. Evidencia local 2026-08-18: 10/10 E2E, 48/48 unit/integration, lint, typecheck, format y build correctos.
 
 ## Medium Priority
 
@@ -199,9 +199,9 @@ No se detectó N+1 en Home. `SqliteKnowledgeStore.list()` sí realiza 1 query de
 
 - Unit: dominio, chunkers, schemas, providers mock, recording adapter.
 - Integration: SQLite sessions/transcripts/notes/library/vectors y transcription queue.
-- E2E: inexistente.
+- E2E: 10 escenarios Playwright Electron.
 
-### Propuesta
+### Implementado
 
 1. `tests/e2e/fixtures`: userData temporal, audio WebM corto, transcript y respuestas IA deterministas.
 2. Composition root acepta adapters solo cuando `LECTA_E2E=1`; nunca desde renderer.
@@ -267,8 +267,8 @@ Presupuestos iniciales propuestos: Home interactivo <2 s en equipo objetivo, FTS
 - Unit/integration: PASS, 48/48
 - Build renderer/main/preload/knowledge-worker: PASS
 - Format: PASS
-- E2E: no configurado; estrategia y seam requerido documentados
-- Accesibilidad automatizada: no configurada; análisis y plan axe documentados
+- E2E: PASS, 10/10 escenarios Playwright Electron offline
+- Accesibilidad automatizada: PASS en Home, modal y sesión completada mediante axe
 - Regresiones detectadas: ninguna en la suite disponible
 
 ## Safe Corrections Applied
@@ -279,5 +279,7 @@ Presupuestos iniciales propuestos: Home interactivo <2 s en equipo objetivo, FTS
 4. IPC de sesión/biblioteca limita título, materia, tags, filtros y paginación.
 5. El modal responde a Escape; errores relevantes usan `role=alert`; Ask tiene nombre accesible y existe foco visible consistente.
 6. Se corrigieron los dos archivos que hacían fallar `format:check`.
+7. Playwright Electron usa `userData` temporal, fixtures deterministas y verifica limpieza del proceso.
+8. Las pestañas de materiales exponen roles y relaciones ARIA; se corrigieron contrastes detectados por axe.
 
-H1 fue resuelto posteriormente mediante child process, protocolo tipado, recuperación, tests y benchmark 1k/10k/100k. H4 permanece abierto: crear fixtures E2E sigue siendo un cambio de testabilidad separado.
+H1 fue resuelto mediante child process, protocolo tipado, recuperación, tests y benchmark 1k/10k/100k. H4 fue resuelto mediante el seam documentado en ADR, Playwright Electron, fixtures offline, aislamiento de datos y evidencia local verde.

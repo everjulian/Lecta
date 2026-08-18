@@ -49,13 +49,27 @@ export function SessionMaterials(props: Props) {
             ['audio', 'Audio'],
           ] as const
         ).map(([id, label]) => (
-          <button key={id} className={tab === id ? 'active' : ''} onClick={() => setTab(id)}>
+          <button
+            key={id}
+            id={`material-tab-${id}`}
+            role="tab"
+            aria-selected={tab === id}
+            aria-controls={`material-panel-${id}`}
+            tabIndex={tab === id ? 0 : -1}
+            className={tab === id ? 'active' : ''}
+            onClick={() => setTab(id)}
+          >
             {label}
           </button>
         ))}
       </div>
       {tab === 'summary' && (
-        <div className="material-panel">
+        <div
+          id="material-panel-summary"
+          className="material-panel"
+          role="tabpanel"
+          aria-labelledby="material-tab-summary"
+        >
           {!props.transcript ? (
             <p className="empty-copy">
               Primero transcribe la grabación para generar material de estudio.
@@ -95,7 +109,12 @@ export function SessionMaterials(props: Props) {
         </div>
       )}
       {tab === 'notes' && (
-        <div className="material-panel">
+        <div
+          id="material-panel-notes"
+          className="material-panel"
+          role="tabpanel"
+          aria-labelledby="material-tab-notes"
+        >
           {!props.notes ? (
             <p className="empty-copy">Genera el resumen para ver apuntes, conceptos y preguntas.</p>
           ) : (
@@ -153,21 +172,32 @@ export function SessionMaterials(props: Props) {
         </div>
       )}
       {tab === 'transcript' && (
-        <TranscriptPanel
-          job={props.job}
-          transcript={props.transcript}
-          model={props.model}
-          resourceMode={props.resourceMode}
-          onModelChange={props.onModelChange}
-          onModeChange={props.onModeChange}
-          onStart={props.onTranscribe}
-          onCancel={props.onCancel}
-          onRestart={props.onRestart}
-          initialTimestamp={props.initialTimestamp}
-        />
+        <div
+          id="material-panel-transcript"
+          role="tabpanel"
+          aria-labelledby="material-tab-transcript"
+        >
+          <TranscriptPanel
+            job={props.job}
+            transcript={props.transcript}
+            model={props.model}
+            resourceMode={props.resourceMode}
+            onModelChange={props.onModelChange}
+            onModeChange={props.onModeChange}
+            onStart={props.onTranscribe}
+            onCancel={props.onCancel}
+            onRestart={props.onRestart}
+            initialTimestamp={props.initialTimestamp}
+          />
+        </div>
       )}
       {tab === 'audio' && (
-        <div className="material-panel">
+        <div
+          id="material-panel-audio"
+          className="material-panel"
+          role="tabpanel"
+          aria-labelledby="material-tab-audio"
+        >
           <h2>Audio de la sesión</h2>
           {props.transcript ? (
             <audio controls src={props.transcript.audioUrl} />

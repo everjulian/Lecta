@@ -12,6 +12,7 @@
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
+    "test:e2e": "pnpm build && playwright test",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "benchmark:knowledge": "node scripts/benchmark-knowledge-worker.mjs",
@@ -26,7 +27,9 @@
     "vite": "latest"
   },
   "devDependencies": {
+    "@axe-core/playwright": "^4.13.0",
     "@eslint/js": "latest",
+    "@playwright/test": "^1.62.1",
     "@types/node": "latest",
     "@types/react": "latest",
     "@types/react-dom": "latest",

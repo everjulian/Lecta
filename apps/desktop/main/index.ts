@@ -2,6 +2,7 @@ import {
   app,
   BrowserWindow,
   desktopCapturer,
+  ipcMain,
   net,
   protocol,
   session as electronSession,
@@ -17,12 +18,17 @@ import { registerRecordingHandlers } from './recording-ipc.js';
 import { registerTranscriptionHandlers } from './transcription-ipc.js';
 import { registerAIHandlers } from './ai-ipc.js';
 import { registerKnowledgeHandlers } from './knowledge-ipc.js';
+import { runtimeChannels } from '../shared/session-contracts.js';
+import { readE2EConfig } from './e2e/e2e-config.js';
 
 protocol.registerSchemesAsPrivileged([
   { scheme: 'lecta-media', privileges: { secure: true, standard: true, stream: true } },
 ]);
 
 const directory = path.dirname(fileURLToPath(import.meta.url));
+const e2eConfig = readE2EConfig(app.isPackaged);
+if (e2eConfig) app.setPath('userData', e2eConfig.userDataPath);
+
 function createWindow(): void {
   const window = new BrowserWindow({
     width: 1100,
@@ -48,13 +54,18 @@ function createWindow(): void {
 void app.whenReady().then(async () => {
   const environmentFile = path.join(app.getAppPath(), '.env');
   if (existsSync(environmentFile)) loadEnvFile(environmentFile);
-  const container = createContainer(app.getPath('userData'), app.getAppPath());
+  const container = createContainer(app.getPath('userData'), app.getAppPath(), {
+    ...(e2eConfig ? { e2e: e2eConfig } : {}),
+  });
   await container.transcriptionQueue.initialize();
   registerSessionHandlers(container);
   registerRecordingHandlers(container);
   const unsubscribeTranscription = registerTranscriptionHandlers(container);
   registerAIHandlers(container);
   registerKnowledgeHandlers(container);
+  ipcMain.on(runtimeChannels.getMode, (event) => {
+    event.returnValue = e2eConfig ? 'E2E' : 'PRODUCTION';
+  });
   protocol.handle('lecta-media', (request) => {
     const url = new URL(request.url);
     if (url.hostname !== 'recording') return new Response('Not found', { status: 404 });

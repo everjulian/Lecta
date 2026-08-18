@@ -71,6 +71,10 @@ La inferencia de embeddings, indexación, lectura de BLOBs, similitud y ranking 
 
 El build produce `dist/knowledge-worker/index.js`. La decisión y sus trade-offs están en [ADR-knowledge-worker.md](../adr/ADR-knowledge-worker.md); las mediciones 1k/10k/100k están en [KNOWLEDGE-WORKER.md](../performance/KNOWLEDGE-WORKER.md). El scan exacto permanece deliberadamente hasta que benchmarks posteriores justifiquen `sqlite-vec` u otra estrategia.
 
+## Pruebas E2E
+
+Playwright inicia el build real de Electron con un `userData` temporal por prueba. Cuando main recibe y valida `LECTA_E2E=1`, el composition root sustituye solo grabación, transcripción, IA y conocimiento por adapters deterministas; SQLite, filesystem, preload, IPC y casos de uso siguen siendo reales. El modo se rechaza en builds empaquetados y no puede activarse desde renderer. La suite se ejecuta offline, con un único proceso Electron a la vez, y verifica su terminación. Detalles en [E2E.md](../testing/E2E.md) y [ADR-e2e-test-seam.md](../adr/ADR-e2e-test-seam.md).
+
 ## Trade-offs
 
 - Un monorepo con paquetes lógicos mejora límites y crecimiento, aunque añade configuración.
