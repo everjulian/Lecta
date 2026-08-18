@@ -4,6 +4,7 @@ packages:
   - workers/*
 
 allowBuilds:
+  core-js: false
   onnxruntime-node: true
   protobufjs: false
   sharp: false

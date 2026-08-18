@@ -20,6 +20,7 @@
 9. Validar todo input en el límite IPC y exponer solo APIs mínimas por `contextBridge`.
 10. Usar `DomainError`, `ApplicationError` e `InfrastructureError`; nunca ocultar errores.
 11. Inyectar `Logger`; no dispersar `console.log` por el código.
+12. Mantener `docs/` como fuente única del contenido; `apps/docs` contiene solamente la presentación y configuración de Docusaurus.
 
 ## Convenciones
 
@@ -38,6 +39,8 @@ pnpm lint
 pnpm typecheck
 pnpm test
 pnpm format:check
+pnpm docs:dev
+pnpm docs:build
 ```
 
 ## No hacer

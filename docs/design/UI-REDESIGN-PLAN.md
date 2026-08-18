@@ -44,7 +44,7 @@ Centralizar decisiones sin alterar significativamente la apariencia.
 
 ### Pruebas
 
-- Visual diff bajo (<1% esperado).
+- Visual diff bajo (&lt;1% esperado).
 - Contrast checks de tokens semánticos.
 - `format/lint/typecheck/build`.
 

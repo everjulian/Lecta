@@ -6,14 +6,31 @@ import globals from 'globals';
 import tseslint from 'typescript-eslint';
 
 export default tseslint.config(
-  { ignores: ['dist', 'coverage', 'node_modules', 'eslint.config.js'] },
+  {
+    ignores: [
+      'dist',
+      'build',
+      '**/build',
+      '**/.docusaurus',
+      'coverage',
+      'node_modules',
+      'eslint.config.js',
+    ],
+  },
   js.configs.recommended,
   ...tseslint.configs.recommendedTypeChecked,
   prettier,
   {
     ...tseslint.configs.disableTypeChecked,
     files: ['**/*.{js,mjs,cjs}'],
-    languageOptions: { globals: { ...globals.node } },
+    languageOptions: {
+      ...tseslint.configs.disableTypeChecked.languageOptions,
+      globals: { ...globals.node },
+    },
+    rules: {
+      ...tseslint.configs.disableTypeChecked.rules,
+      '@typescript-eslint/no-require-imports': 'off',
+    },
   },
   {
     files: ['**/*.{ts,tsx}'],
