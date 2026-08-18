@@ -1,5 +1,7 @@
 # Lecta
 
+[![CI](https://github.com/everjulian/Lecta/actions/workflows/ci.yml/badge.svg)](https://github.com/everjulian/Lecta/actions/workflows/ci.yml)
+
 Lecta es una aplicación desktop local-first para capturar clases y reuniones y, en fases futuras, transcribirlas y generar material de estudio con IA.
 
 Lecta incluye sesiones persistentes en SQLite, grabación real en Windows de audio del sistema y micrófono, transcripción offline con faster-whisper y generación configurable de material de estudio con IA. La captura usa chunks WebM/Opus recuperables y nunca ejecuta transcripción ni IA mientras está grabando.
