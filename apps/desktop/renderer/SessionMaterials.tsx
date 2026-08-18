@@ -1,6 +1,7 @@
 import { useRef, useState } from 'react';
 import type {
   AIGenerationProgressDto,
+  IpcErrorDto,
   StructuredNotesDto,
   TranscriptDto,
   TranscriptionJobDto,
@@ -9,12 +10,13 @@ import type {
 } from '../shared/session-contracts';
 import { formatTimestamp } from './session-format';
 import { TranscriptPanel } from './TranscriptPanel';
+import { ErrorNotice } from './ErrorNotice';
 
 type Tab = 'summary' | 'notes' | 'transcript' | 'audio';
 interface Props {
   notes: StructuredNotesDto | null;
   aiProgress: AIGenerationProgressDto | null;
-  aiError: string | null;
+  aiError: IpcErrorDto | null;
   transcript: TranscriptDto | null;
   job: TranscriptionJobDto | null;
   model: TranscriptionModel;
@@ -104,7 +106,7 @@ export function SessionMaterials(props: Props) {
           ) : (
             <GenerateState {...props} />
           )}
-          {props.aiError && <p className="error-banner">{props.aiError}</p>}
+          {props.aiError && <ErrorNotice error={props.aiError} onRetry={props.onGenerate} />}
           {props.aiProgress && <AIProgress value={props.aiProgress} />}
         </div>
       )}

@@ -10,6 +10,7 @@ import type {
   StructuredNotesDto,
   AIGenerationProgressDto,
   LibraryQueryDto,
+  IpcErrorDto,
 } from '../shared/session-contracts';
 import { HomeView } from './HomeView';
 import { NewSessionDialog } from './NewSessionDialog';
@@ -19,6 +20,7 @@ import {
   type MicrophoneOption,
 } from './recording/electron-engine';
 import { SessionView } from './SessionView';
+import { toUiError } from './ui-error';
 
 export function App() {
   const [engine] = useState(createRecordingEngine);
@@ -33,19 +35,25 @@ export function App() {
   const [selected, setSelected] = useState<SessionDto | null>(null);
   const [initialTimestamp, setInitialTimestamp] = useState<number | null>(null);
   const [creating, setCreating] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [error, setError] = useState<IpcErrorDto | null>(null);
+  const [retryError, setRetryError] = useState<(() => void) | null>(null);
   const [transcriptionJob, setTranscriptionJob] = useState<TranscriptionJobDto | null>(null);
   const [transcript, setTranscript] = useState<TranscriptDto | null>(null);
   const [transcriptionModel, setTranscriptionModel] = useState<TranscriptionModel>('small');
   const [transcriptionMode, setTranscriptionMode] = useState<TranscriptionResourceMode>('LIGHT');
   const [notes, setNotes] = useState<StructuredNotesDto | null>(null);
   const [aiProgress, setAIProgress] = useState<AIGenerationProgressDto | null>(null);
-  const [aiError, setAIError] = useState<string | null>(null);
+  const [aiError, setAIError] = useState<IpcErrorDto | null>(null);
 
   const searchLibrary = useCallback(async (query: LibraryQueryDto) => {
-    const result = await window.lecta.sessions.searchLibrary(query);
-    setSessions(result.items);
-    setLibraryTotal(result.total);
+    try {
+      const result = await window.lecta.sessions.searchLibrary(query);
+      setSessions(result.items);
+      setLibraryTotal(result.total);
+    } catch (cause) {
+      setError(toUiError(cause));
+      setRetryError(null);
+    }
   }, []);
   const loadSessions = async () => {
     const base = { page: 1, pageSize: 20, sort: 'NEWEST' as const };
@@ -91,7 +99,10 @@ export function App() {
           setMicrophoneId(preference ?? devices[0]?.deviceId ?? '');
         },
       )
-      .catch((cause: unknown) => setError(messageFrom(cause)));
+      .catch((cause: unknown) => {
+        setError(toUiError(cause));
+        setRetryError(() => () => void loadSessions());
+      });
   }, []);
 
   useEffect(() => {
@@ -101,15 +112,17 @@ export function App() {
       window.lecta.transcription.getJob(sessionId),
       window.lecta.transcription.getTranscript(sessionId),
       window.lecta.ai.getNotes(sessionId),
-    ]).then(([job, storedTranscript, storedNotes]) => {
-      setTranscriptionJob(job);
-      setTranscript(storedTranscript);
-      setNotes(storedNotes);
-      if (job) {
-        setTranscriptionModel(job.model);
-        setTranscriptionMode(job.resourceMode);
-      }
-    });
+    ])
+      .then(([job, storedTranscript, storedNotes]) => {
+        setTranscriptionJob(job);
+        setTranscript(storedTranscript);
+        setNotes(storedNotes);
+        if (job) {
+          setTranscriptionModel(job.model);
+          setTranscriptionMode(job.resourceMode);
+        }
+      })
+      .catch((cause: unknown) => setError(toUiError(cause)));
     const stopTranscription = window.lecta.transcription.onProgress((job) => {
       if (job.sessionId !== sessionId) return;
       setTranscriptionJob(job);
@@ -131,10 +144,12 @@ export function App() {
       const session = await window.lecta.sessions.create(input);
       setCreating(false);
       setError(null);
+      setRetryError(null);
       setSelected(session);
       await loadSessions();
     } catch (cause) {
-      setError(messageFrom(cause));
+      setError(toUiError(cause));
+      setRetryError(() => () => void createSession(input));
     }
   };
 
@@ -150,8 +165,10 @@ export function App() {
       await window.lecta.recording.setMicrophonePreference(microphoneId || null);
       setSelected(await window.lecta.sessions.start(selected.id));
       setError(null);
+      setRetryError(null);
     } catch (cause) {
-      setError(messageFrom(cause));
+      setError(toUiError(cause));
+      setRetryError(() => () => void start());
     }
   };
 
@@ -169,9 +186,11 @@ export function App() {
       await recordingAction();
       setSelected(await sessionAction(selected.id));
       setError(null);
+      setRetryError(null);
       await loadSessions();
     } catch (cause) {
-      setError(messageFrom(cause));
+      setError(toUiError(cause));
+      setRetryError(() => () => void runRecordingAction(recordingAction, sessionAction));
     }
   };
 
@@ -180,8 +199,10 @@ export function App() {
       await window.lecta.recording[action](sessionId);
       await Promise.all([loadIncomplete(), loadSessions()]);
       setError(null);
+      setRetryError(null);
     } catch (cause) {
-      setError(messageFrom(cause));
+      setError(toUiError(cause));
+      setRetryError(() => () => void resolveIncomplete(sessionId, action));
     }
   };
 
@@ -196,14 +217,21 @@ export function App() {
         }),
       );
       setError(null);
+      setRetryError(null);
     } catch (cause) {
-      setError(messageFrom(cause));
+      setError(toUiError(cause));
+      setRetryError(() => () => void transcribe());
     }
   };
 
   const cancelTranscription = async () => {
     if (!transcriptionJob) return;
-    await window.lecta.transcription.cancel(transcriptionJob.id);
+    try {
+      await window.lecta.transcription.cancel(transcriptionJob.id);
+    } catch (cause) {
+      setError(toUiError(cause));
+      setRetryError(() => () => void cancelTranscription());
+    }
   };
 
   const restartTranscription = async () => {
@@ -211,8 +239,10 @@ export function App() {
     try {
       setTranscriptionJob(await window.lecta.transcription.restart(transcriptionJob.id));
       setError(null);
+      setRetryError(null);
     } catch (cause) {
-      setError(messageFrom(cause));
+      setError(toUiError(cause));
+      setRetryError(() => () => void restartTranscription());
     }
   };
 
@@ -223,7 +253,7 @@ export function App() {
       setAIProgress({ sessionId: selected.id, stage: 'CHUNKING', progress: 0 });
       setNotes(await window.lecta.ai.generate(selected.id));
     } catch (cause) {
-      setAIError(messageFrom(cause));
+      setAIError(toUiError(cause));
     } finally {
       setAIProgress(null);
     }
@@ -238,6 +268,7 @@ export function App() {
           microphones={microphones}
           microphoneId={microphoneId}
           error={error}
+          onRetryError={() => retryError?.()}
           onMicrophoneChange={setMicrophoneId}
           onBack={() => {
             setSelected(null);
@@ -272,6 +303,7 @@ export function App() {
           recentClasses={recentClasses}
           recentMeetings={recentMeetings}
           onSearch={searchLibrary}
+          onRetryError={() => retryError?.()}
           onOpenSource={(sessionId, timestamp) => {
             void window.lecta.sessions.get(sessionId).then((session) => {
               setInitialTimestamp(timestamp);
@@ -306,8 +338,4 @@ export function App() {
       )}
     </main>
   );
-}
-
-function messageFrom(cause: unknown): string {
-  return cause instanceof Error ? cause.message : 'Ocurrió un error inesperado';
 }

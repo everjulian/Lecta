@@ -130,9 +130,14 @@ export class TranscriptionQueue {
       await this.update(job, { status: 'COMPLETED', progress: 100, error: null });
     } catch (cause) {
       if (!controller.signal.aborted) {
+        this.deps.logger?.error('Transcription job failed', cause, {
+          operation: 'transcription:worker',
+          errorCode: 'TRANSCRIPTION_FAILED',
+          errorType: cause instanceof Error ? cause.name : typeof cause,
+        });
         await this.update(job, {
           status: 'FAILED',
-          error: cause instanceof Error ? cause.message : 'Transcription failed',
+          error: 'TRANSCRIPTION_FAILED',
         });
       }
     } finally {

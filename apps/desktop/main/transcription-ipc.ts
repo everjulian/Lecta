@@ -1,4 +1,4 @@
-import { BrowserWindow, ipcMain } from 'electron';
+import { BrowserWindow } from 'electron';
 import type { Transcript } from '@lecta/domain';
 import type { TranscriptionJob } from '@lecta/transcription';
 import {
@@ -8,6 +8,9 @@ import {
   type TranscriptionRequestDto,
 } from '../shared/session-contracts.js';
 import type { ApplicationContainer } from './container.js';
+import { registerIpcHandler } from './ipc-result.js';
+import { createIpcError } from './ipc-result.js';
+import { existsSync } from 'node:fs';
 
 const requireId = (value: unknown): string => {
   if (typeof value !== 'string' || !/^[a-zA-Z0-9-]{1,100}$/.test(value)) {
@@ -39,7 +42,7 @@ const toJobDto = (job: TranscriptionJob): TranscriptionJobDto => ({
   resourceMode: job.resourceMode,
   status: job.status,
   progress: job.progress,
-  error: job.error,
+  error: job.status === 'FAILED' ? createIpcError('TRANSCRIPTION_FAILED', job.id) : null,
   createdAt: job.createdAt.toISOString(),
   updatedAt: job.updatedAt.toISOString(),
 });
@@ -51,30 +54,34 @@ const toTranscriptDto = (transcript: Transcript): TranscriptDto => ({
 });
 
 export function registerTranscriptionHandlers(container: ApplicationContainer): () => void {
-  const { transcriptionQueue, transcriptionStore, recordings } = container;
-  ipcMain.handle(transcriptionChannels.enqueue, (_event, input: unknown) => {
+  const { transcriptionQueue, transcriptionStore, recordings, logger } = container;
+  registerIpcHandler(transcriptionChannels.enqueue, logger, (_event, input: unknown) => {
     const request = requireRequest(input);
+    const recordingPath = recordings.getRecordingFilePath(request.sessionId);
+    if (container.e2e?.scenario === 'missing-recording' || !existsSync(recordingPath)) {
+      throw Object.assign(new Error('Recording file is missing'), { code: 'ENOENT' });
+    }
     return transcriptionQueue
       .enqueue({
         ...request,
-        recordingPath: recordings.getRecordingFilePath(request.sessionId),
+        recordingPath,
       })
       .then(toJobDto);
   });
-  ipcMain.handle(transcriptionChannels.getJob, (_event, sessionId: unknown) =>
+  registerIpcHandler(transcriptionChannels.getJob, logger, (_event, sessionId: unknown) =>
     transcriptionQueue
       .getJobForSession(requireId(sessionId))
       .then((job) => (job ? toJobDto(job) : null)),
   );
-  ipcMain.handle(transcriptionChannels.getTranscript, (_event, sessionId: unknown) =>
+  registerIpcHandler(transcriptionChannels.getTranscript, logger, (_event, sessionId: unknown) =>
     transcriptionStore
       .getTranscriptBySessionId(requireId(sessionId))
       .then((transcript) => (transcript ? toTranscriptDto(transcript) : null)),
   );
-  ipcMain.handle(transcriptionChannels.cancel, (_event, jobId: unknown) =>
+  registerIpcHandler(transcriptionChannels.cancel, logger, (_event, jobId: unknown) =>
     transcriptionQueue.cancel(requireId(jobId)),
   );
-  ipcMain.handle(transcriptionChannels.restart, (_event, jobId: unknown) =>
+  registerIpcHandler(transcriptionChannels.restart, logger, (_event, jobId: unknown) =>
     transcriptionQueue.restart(requireId(jobId)).then(toJobDto),
   );
   return transcriptionQueue.subscribe((job) => {

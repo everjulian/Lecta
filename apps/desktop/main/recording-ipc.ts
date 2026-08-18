@@ -1,4 +1,4 @@
-import { app, ipcMain, shell } from 'electron';
+import { app, shell } from 'electron';
 import type { ResourceSample } from '@lecta/infrastructure';
 import {
   recordingChannels,
@@ -6,6 +6,8 @@ import {
   type RecordingInitializeInput,
 } from '../shared/session-contracts.js';
 import type { ApplicationContainer } from './container.js';
+import { registerIpcHandler } from './ipc-result.js';
+import { existsSync } from 'node:fs';
 
 const requireSessionId = (value: unknown): string => {
   if (typeof value !== 'string' || !/^[a-zA-Z0-9-]{1,100}$/.test(value)) {
@@ -89,12 +91,13 @@ const requireFinalizeInput = (value: unknown): RecordingFinalizeInput => {
 };
 
 export function registerRecordingHandlers(container: ApplicationContainer): void {
-  const { recordings, preferences, useCases } = container;
-  ipcMain.handle(recordingChannels.initialize, (_event, input: unknown) =>
+  const { recordings, preferences, useCases, logger } = container;
+  registerIpcHandler(recordingChannels.initialize, logger, (_event, input: unknown) =>
     recordings.initialize(requireInitializeInput(input)),
   );
-  ipcMain.handle(
+  registerIpcHandler(
     recordingChannels.writeChunk,
+    logger,
     async (_event, sessionId: unknown, index: unknown, data: unknown, duration: unknown) => {
       if (!Number.isInteger(index) || (index as number) < 0)
         throw new TypeError('Invalid chunk index');
@@ -111,8 +114,9 @@ export function registerRecordingHandlers(container: ApplicationContainer): void
       );
     },
   );
-  ipcMain.handle(
+  registerIpcHandler(
     recordingChannels.updateStatus,
+    logger,
     (_event, sessionId: unknown, status: unknown, duration: unknown) => {
       if (status !== 'RECORDING' && status !== 'PAUSED') {
         throw new TypeError('Invalid recording state');
@@ -124,32 +128,39 @@ export function registerRecordingHandlers(container: ApplicationContainer): void
       );
     },
   );
-  ipcMain.handle(recordingChannels.finalize, (_event, input: unknown) =>
+  registerIpcHandler(recordingChannels.finalize, logger, (_event, input: unknown) =>
     recordings.finalize(requireFinalizeInput(input)),
   );
-  ipcMain.handle(recordingChannels.listIncomplete, () => recordings.listIncomplete());
-  ipcMain.handle(recordingChannels.recover, async (_event, sessionId: unknown) => {
+  registerIpcHandler(recordingChannels.listIncomplete, logger, () => recordings.listIncomplete());
+  registerIpcHandler(recordingChannels.recover, logger, async (_event, sessionId: unknown) => {
     const id = requireSessionId(sessionId);
     const result = await recordings.recover(id);
     await useCases.finishSession.execute(id);
     return result;
   });
-  ipcMain.handle(recordingChannels.discard, async (_event, sessionId: unknown) => {
+  registerIpcHandler(recordingChannels.discard, logger, async (_event, sessionId: unknown) => {
     const id = requireSessionId(sessionId);
     await recordings.discard(id);
     await useCases.failInterruptedSession.execute(id);
   });
-  ipcMain.handle(recordingChannels.getMicrophonePreference, () =>
+  registerIpcHandler(recordingChannels.getMicrophonePreference, logger, () =>
     preferences.getMicrophoneDeviceId(),
   );
-  ipcMain.handle(recordingChannels.setMicrophonePreference, (_event, deviceId: unknown) => {
-    if (deviceId !== null && (typeof deviceId !== 'string' || deviceId.length > 500)) {
-      throw new TypeError('Invalid microphone device id');
-    }
-    return preferences.setMicrophoneDeviceId(deviceId);
-  });
-  ipcMain.handle(recordingChannels.showInFolder, (_event, sessionId: unknown) => {
-    shell.showItemInFolder(recordings.getRecordingFilePath(requireSessionId(sessionId)));
+  registerIpcHandler(
+    recordingChannels.setMicrophonePreference,
+    logger,
+    (_event, deviceId: unknown) => {
+      if (deviceId !== null && (typeof deviceId !== 'string' || deviceId.length > 500)) {
+        throw new TypeError('Invalid microphone device id');
+      }
+      return preferences.setMicrophoneDeviceId(deviceId);
+    },
+  );
+  registerIpcHandler(recordingChannels.showInFolder, logger, (_event, sessionId: unknown) => {
+    const recordingPath = recordings.getRecordingFilePath(requireSessionId(sessionId));
+    if (!existsSync(recordingPath))
+      throw Object.assign(new Error('Recording file is missing'), { code: 'ENOENT' });
+    shell.showItemInFolder(recordingPath);
   });
 }
 

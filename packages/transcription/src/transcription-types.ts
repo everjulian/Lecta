@@ -1,4 +1,5 @@
 import type { Transcript, TranscriptSegment } from '@lecta/domain';
+import type { Logger } from '@lecta/shared';
 
 export type TranscriptionJobStatus =
   'QUEUED' | 'PREPARING' | 'TRANSCRIBING' | 'SAVING' | 'COMPLETED' | 'FAILED' | 'CANCELLED';
@@ -61,4 +62,5 @@ export interface QueueDependencies {
   modelDirectory: string;
   generateId(): string;
   now(): Date;
+  logger?: Logger;
 }

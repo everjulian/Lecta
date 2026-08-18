@@ -20,7 +20,6 @@ import {
   SqliteKnowledgeStore,
   SystemClock,
 } from '@lecta/infrastructure';
-import { NullLogger } from '@lecta/shared';
 import path from 'node:path';
 import { TranscriptionQueue } from '@lecta/transcription';
 import { FasterWhisperProvider } from '../../../workers/transcription-worker/src/index';
@@ -38,6 +37,7 @@ import {
   FakeKnowledgeWorker,
   FakeTranscriptionProvider,
 } from './e2e/fake-providers';
+import { SafeStderrLogger } from './safe-stderr-logger';
 
 export function createContainer(
   userDataPath: string,
@@ -52,7 +52,7 @@ export function createContainer(
   sessions.ensureLibraryIndex();
   const recordings = new FileRecordingStore(path.join(userDataPath, 'recordings'));
   const preferences = new FilePreferenceStore(userDataPath);
-  const logger = new NullLogger();
+  const logger = new SafeStderrLogger();
   const shared = { sessions, clock: new SystemClock(), logger };
   const transcriptionProvider: TranscriptionProvider = options.e2e
     ? new FakeTranscriptionProvider(options.e2e.scenario)
@@ -68,6 +68,7 @@ export function createContainer(
     modelDirectory: path.join(userDataPath, 'models', 'faster-whisper'),
     generateId: () => crypto.randomUUID(),
     now: () => new Date(),
+    logger,
   });
   const aiProvider = options.e2e ? new FakeAIProvider(options.e2e.scenario) : createAIProvider();
   const generateStructuredNotes = new GenerateStructuredNotes({
@@ -98,6 +99,7 @@ export function createContainer(
   );
 
   return {
+    e2e: options.e2e,
     sessions,
     recordings,
     preferences,
@@ -107,6 +109,7 @@ export function createContainer(
     generateStructuredNotes,
     knowledgeStore,
     knowledgeWorker,
+    logger,
     indexKnowledge,
     askKnowledge,
     useCases: {

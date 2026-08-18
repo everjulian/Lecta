@@ -1,4 +1,3 @@
-import { ipcMain } from 'electron';
 import type { Session, SessionType } from '@lecta/domain';
 import {
   sessionChannels,
@@ -8,6 +7,7 @@ import {
   type LibraryQueryDto,
 } from '../shared/session-contracts.js';
 import type { ApplicationContainer } from './container.js';
+import { registerIpcHandler } from './ipc-result.js';
 
 const toDto = (session: Session): SessionDto => ({
   ...session.toPrimitives(),
@@ -96,8 +96,9 @@ const requireLibraryQuery = (value: unknown): LibraryQueryDto => {
   return input as unknown as LibraryQueryDto;
 };
 
-export function registerSessionHandlers({ useCases }: ApplicationContainer): void {
-  ipcMain.handle(sessionChannels.create, async (_event, input: unknown) => {
+export function registerSessionHandlers(container: ApplicationContainer): void {
+  const { useCases, logger } = container;
+  registerIpcHandler(sessionChannels.create, logger, async (_event, input: unknown) => {
     const valid = requireCreateInput(input);
     return toDto(
       await useCases.createSession.execute({
@@ -107,13 +108,13 @@ export function registerSessionHandlers({ useCases }: ApplicationContainer): voi
       }),
     );
   });
-  ipcMain.handle(sessionChannels.get, async (_event, id: unknown) =>
+  registerIpcHandler(sessionChannels.get, logger, async (_event, id: unknown) =>
     toDto(await useCases.getSession.execute(requireId(id))),
   );
-  ipcMain.handle(sessionChannels.list, async () =>
+  registerIpcHandler(sessionChannels.list, logger, async () =>
     (await useCases.listSessions.execute()).map(toDto),
   );
-  ipcMain.handle(sessionChannels.searchLibrary, async (_event, value: unknown) => {
+  registerIpcHandler(sessionChannels.searchLibrary, logger, async (_event, value: unknown) => {
     const query = requireLibraryQuery(value);
     const result = await useCases.searchLibrary.execute({
       ...query,
@@ -131,17 +132,19 @@ export function registerSessionHandlers({ useCases }: ApplicationContainer): voi
       })),
     };
   });
-  ipcMain.handle(sessionChannels.listSubjects, () => useCases.listLibrarySubjects.execute());
-  ipcMain.handle(sessionChannels.start, async (_event, id: unknown) =>
+  registerIpcHandler(sessionChannels.listSubjects, logger, () =>
+    useCases.listLibrarySubjects.execute(),
+  );
+  registerIpcHandler(sessionChannels.start, logger, async (_event, id: unknown) =>
     toDto(await useCases.startRecording.execute(requireId(id))),
   );
-  ipcMain.handle(sessionChannels.pause, async (_event, id: unknown) =>
+  registerIpcHandler(sessionChannels.pause, logger, async (_event, id: unknown) =>
     toDto(await useCases.pauseRecording.execute(requireId(id))),
   );
-  ipcMain.handle(sessionChannels.resume, async (_event, id: unknown) =>
+  registerIpcHandler(sessionChannels.resume, logger, async (_event, id: unknown) =>
     toDto(await useCases.resumeRecording.execute(requireId(id))),
   );
-  ipcMain.handle(sessionChannels.finish, async (_event, id: unknown) =>
+  registerIpcHandler(sessionChannels.finish, logger, async (_event, id: unknown) =>
     toDto(await useCases.finishSession.execute(requireId(id))),
   );
 }

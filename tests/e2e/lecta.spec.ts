@@ -110,7 +110,10 @@ test.describe('recoverable failures', () => {
       await finishRecording(page);
       await page.getByRole('tab', { name: 'Transcripción' }).click();
       await page.getByRole('button', { name: 'Transcribir ahora' }).click();
-      await expect(page.getByText('Fixture: la transcripción falló')).toBeVisible();
+      const alert = page.getByRole('alert');
+      await expect(alert).toContainText('No pudimos completar la transcripción.');
+      await expect(alert).toContainText('Tu grabación sigue segura');
+      await expect(alert).not.toContainText('Error invoking remote method');
       await expect(page.getByRole('button', { name: 'Reiniciar transcripción' })).toBeEnabled();
     });
   });
@@ -122,7 +125,10 @@ test.describe('recoverable failures', () => {
       await finishRecording(page);
       await page.getByRole('tab', { name: 'Transcripción' }).click();
       await page.getByRole('button', { name: 'Transcribir ahora' }).click();
-      await expect(page.getByText('Fixture: no encontramos el archivo')).toBeVisible();
+      const alert = page.getByRole('alert');
+      await expect(alert).toContainText('No encontramos el archivo de grabación');
+      await expect(alert).toContainText('La sesión y cualquier transcripción existente');
+      await expect(alert).not.toContainText('Error invoking remote method');
       await expect(page.getByRole('button', { name: '← Volver a sesiones' })).toBeEnabled();
     });
   });
@@ -135,7 +141,11 @@ test.describe('recoverable failures', () => {
       await transcribe(page);
       await page.getByRole('tab', { name: 'Resumen' }).click();
       await page.getByRole('button', { name: 'Generar apuntes' }).click();
-      await expect(page.getByText('Fixture: la generación superó')).toBeVisible();
+      const alert = page.getByRole('alert');
+      await expect(alert).toContainText('No pudimos preparar tus apuntes.');
+      await expect(alert).toContainText('Tu grabación y transcripción siguen seguras.');
+      await expect(alert.getByRole('button', { name: 'Reintentar' })).toBeEnabled();
+      await expect(alert).not.toContainText('Error invoking remote method');
       await page.getByRole('tab', { name: 'Transcripción' }).click();
       await expect(page.getByText('Clean Architecture separa las reglas')).toBeVisible();
     });
@@ -146,7 +156,11 @@ test.describe('recoverable failures', () => {
     test('shows a recoverable error and leaves Home interactive', async ({ page }) => {
       await page.getByLabel('¿Qué quieres encontrar?').fill('pregunta de fallo');
       await page.getByRole('button', { name: 'Preguntar' }).click();
-      await expect(page.getByRole('alert')).toContainText('Puedes intentarlo nuevamente');
+      const alert = page.getByRole('alert');
+      await expect(alert).toContainText('No pudimos consultar el conocimiento');
+      await expect(alert).toContainText('Tus sesiones y transcripciones siguen disponibles.');
+      await expect(alert.getByRole('button', { name: 'Reintentar' })).toBeEnabled();
+      await expect(alert).not.toContainText('Error invoking remote method');
       await expect(page.getByRole('button', { name: 'Nueva sesión' })).toBeEnabled();
     });
   });
