@@ -15,10 +15,10 @@ Todavía no debe considerarse release-ready por las tareas medias y bajas detall
 | --------------- | -------------: | ---------------------------------------------------------------------------------- |
 | Architecture    |              8 | Capas claras; worker semántico aislado y reiniciable                               |
 | Code Quality    |              7 | strict, sin `any`, `@ts-ignore` ni logging disperso; componentes/archivos grandes  |
-| Testing         |              8 | 48 unit/integration y 10 E2E Electron; falta regresión visual dedicada             |
+| Testing         |              8 | 48 unit/integration y 14 E2E Electron; falta regresión visual dedicada             |
 | Security        |              7 | aislamiento, sandbox, CSP e IPC explícito; permisos/navegación e inputs mejorables |
 | Performance     |              7 | paginación/FTS/chunks; vector scan aislado y benchmark reproducible                |
-| Accessibility   |              7 | axe en Home/modal/sesión y tabs semánticas; falta prueba completa solo con teclado |
+| Accessibility   |              8 | gate axe, teclado, foco, live regions, reduced motion y reflow 200 % automatizados |
 | Design System   |              3 | lenguaje visual coherente, pero sin tokens/componentes base y ~80 colores hex      |
 | Maintainability |              6 | paquetes pequeños en backend; `HomeView`, `App` y CSS concentran cambios           |
 | Scalability     |              6 | 1.000 sesiones razonables para biblioteca; 10.000 penalizan vectores y filesystem  |
@@ -105,10 +105,10 @@ No se confirmaron problemas CRITICAL. La auditoría no simuló corrupción físi
 ### H4 — Resuelto: E2E Electron y auditoría automática de accesibilidad
 
 - Ubicación: configuración/tests del repositorio.
-- Evidencia: `tests/e2e/lecta.spec.ts` ejecuta diez pruebas que cubren los siete flujos solicitados, incluyendo persistencia tras reinicio y cuatro fallos recuperables.
+- Evidencia: diez pruebas cubren los siete flujos de producto y cuatro pruebas adicionales validan teclado, foco, movimiento reducido y reflow, incluyendo persistencia tras reinicio y cuatro fallos recuperables.
 - Aislamiento: `LECTA_E2E=1` solo se acepta en main no empaquetado, cada prueba usa `userData` temporal y los adapters fixture no usan micrófono, loopback, Python, Whisper, modelos, APIs ni red.
 - Accesibilidad: `@axe-core/playwright` valida Home, diálogo y sesión completada. Como correcciones derivadas se ajustó contraste y se añadieron roles/relaciones de tabs y tabpanels.
-- CI: job E2E independiente, serial y offline con traces/screenshots únicamente en fallo. Evidencia local 2026-08-18: 10/10 E2E, 48/48 unit/integration, lint, typecheck, format y build correctos.
+- CI: job E2E independiente, serial y offline con traces/screenshots únicamente en fallo. Evidencia local 2026-08-18: 14/14 E2E, 48/48 unit/integration, lint, typecheck, format y build correctos.
 
 ## Medium Priority
 
@@ -136,9 +136,9 @@ La organización por `recordings/SESSION_ID` es buena. Faltan espacio libre prev
 
 Electron serializa mensajes como “Error invoking remote method…”. No hay envelope tipado con código, mensaje seguro y retryable. Esto reduce UX y puede filtrar detalles internos. Definir `IpcResult`/error mapper central, sin ocultar logs diagnósticos.
 
-### M7 — Accesibilidad manual incompleta
+### M7 — Resuelto: accesibilidad automatizada y manual básica
 
-El modal no implementa Escape ni focus trap/restore. Mensajes de error/progreso no tienen `aria-live`; focus visible depende del navegador y no está diseñado; el input de Ask carece de label programático explícito; tabs visuales no implementan semántica completa (`role=tab`, `aria-selected`, panel). Corregir por componentes base y validar solo con teclado.
+El modal implementa Escape, focus trap y restauración; estados/progresos usan live regions sin anunciar el timer; errores usan alert; recorder muestra “Grabando”/“Pausado”; tabs implementan semántica y navegación APG. Playwright valida Tab, Shift+Tab, Enter, Space, flechas, Home, End, movimiento reducido y reflow 200 %. La guía y lista manual están en `docs/accessibility/ACCESSIBILITY.md`.
 
 ### M8 — Design System inexistente
 
@@ -199,7 +199,7 @@ No se detectó N+1 en Home. `SqliteKnowledgeStore.list()` sí realiza 1 query de
 
 - Unit: dominio, chunkers, schemas, providers mock, recording adapter.
 - Integration: SQLite sessions/transcripts/notes/library/vectors y transcription queue.
-- E2E: 10 escenarios Playwright Electron.
+- E2E: 14 escenarios Playwright Electron.
 
 ### Implementado
 
@@ -267,7 +267,7 @@ Presupuestos iniciales propuestos: Home interactivo <2 s en equipo objetivo, FTS
 - Unit/integration: PASS, 48/48
 - Build renderer/main/preload/knowledge-worker: PASS
 - Format: PASS
-- E2E: PASS, 10/10 escenarios Playwright Electron offline
+- E2E: PASS, 14/14 escenarios Playwright Electron offline
 - Accesibilidad automatizada: PASS en Home, modal y sesión completada mediante axe
 - Regresiones detectadas: ninguna en la suite disponible
 

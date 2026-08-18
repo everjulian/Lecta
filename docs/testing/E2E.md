@@ -2,7 +2,7 @@
 
 ## Alcance
 
-La suite inicia el build real de Electron con Playwright y recorre renderer, preload, IPC, casos de uso, SQLite y filesystem. Cubre el ciclo de sesión, persistencia tras reinicio, transcripción, apuntes, biblioteca, preguntas con fuentes y fallos recuperables. Axe revisa Home, el diálogo de creación y una sesión completada.
+La suite inicia el build real de Electron con Playwright y recorre renderer, preload, IPC, casos de uso, SQLite y filesystem. Cubre el ciclo de sesión, persistencia tras reinicio, transcripción, apuntes, biblioteca, preguntas con fuentes y fallos recuperables. Axe aplica el quality gate de accesibilidad y pruebas adicionales validan teclado, foco, movimiento reducido y reflow equivalente a zoom 200 %.
 
 ## Modo aislado
 
@@ -45,3 +45,4 @@ pnpm exec playwright show-trace test-results/e2e/<prueba>/trace.zip
 Cada teardown cierra `ElectronApplication` y comprueba que su PID terminó antes de borrar `userData`. Los fakes E2E no crean workers de conocimiento ni procesos Python, por lo que la suite no deja Whisper ni procesos auxiliares activos. Un fallo de aserción también ejecuta el teardown y conserva el diagnóstico.
 
 La decisión de diseño y sus límites están en [ADR-e2e-test-seam.md](../adr/ADR-e2e-test-seam.md).
+El alcance de accesibilidad y la lista manual están en [ACCESSIBILITY.md](../accessibility/ACCESSIBILITY.md).

@@ -8,7 +8,7 @@ export const sessionTypeLabel: Readonly<Record<SessionTypeDto, string>> = {
 export const sessionStatusLabel: Readonly<Record<SessionStatusDto, string>> = {
   IDLE: 'Lista para grabar',
   RECORDING: 'Grabando',
-  PAUSED: 'En pausa',
+  PAUSED: 'Pausado',
   PROCESSING: 'Procesando',
   COMPLETED: 'Completada',
   FAILED: 'Fallida',

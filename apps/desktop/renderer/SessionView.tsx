@@ -101,8 +101,10 @@ export function SessionView({
         <div className={`recording-orb orb-${session.status.toLowerCase()}`}>
           <span />
         </div>
-        <time className="timer">{formatDuration(duration, true)}</time>
-        <div className="current-status">
+        <time className="timer" aria-hidden="true">
+          {formatDuration(duration, true)}
+        </time>
+        <div className="current-status" role="status" aria-live="polite" aria-atomic="true">
           <span className={`status-dot status-${session.status.toLowerCase()}`} />
           {sessionStatusLabel[session.status]}
         </div>
@@ -151,7 +153,9 @@ export function SessionView({
             </>
           )}
           {session.status === 'PROCESSING' && (
-            <p className="processing-copy">Procesando la sesión…</p>
+            <p className="processing-copy" role="status" aria-live="polite">
+              Procesando la sesión…
+            </p>
           )}
           {(session.status === 'COMPLETED' || session.status === 'FAILED') && (
             <>

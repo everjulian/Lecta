@@ -1,14 +1,13 @@
-import AxeBuilder from '@axe-core/playwright';
-import type { Page } from '@playwright/test';
 import { test, expect } from './fixtures/lecta-app';
 import { createSession, finishRecording, transcribe } from './fixtures/flows';
+import { expectNoSeriousA11yViolations } from './fixtures/accessibility';
 
 test('creates, records, pauses, resumes and finishes a session', async ({ page }) => {
   await expect(page.getByRole('heading', { name: 'Biblioteca', exact: true })).toBeVisible();
-  await expectA11y(page);
+  await expectNoSeriousA11yViolations(page);
 
   await page.getByRole('button', { name: 'Nueva sesión' }).click();
-  await expectA11y(page);
+  await expectNoSeriousA11yViolations(page);
   await page.getByRole('button', { name: 'Cerrar' }).click();
 
   await createSession(page, {
@@ -18,7 +17,7 @@ test('creates, records, pauses, resumes and finishes a session', async ({ page }
   });
   await finishRecording(page);
   await expect(page.getByRole('button', { name: 'Mostrar archivo' })).toBeEnabled();
-  await expectA11y(page);
+  await expectNoSeriousA11yViolations(page);
 });
 
 test('persists sessions after closing and reopening with the same userData', async ({
@@ -78,6 +77,7 @@ test('searches, filters, paginates and opens library sessions', async ({ page })
   await expect(page.getByRole('button', { name: 'Siguiente' })).toBeEnabled();
   await page.getByRole('button', { name: 'Siguiente' }).click();
   await expect(page.getByText('Página 2 de 2')).toBeVisible();
+  await expectNoSeriousA11yViolations(page);
   const library = page.getByRole('region', { name: 'Todas las sesiones' });
   await library.getByRole('button').first().click();
   await expect(page.getByRole('button', { name: 'Grabar' })).toBeVisible();
@@ -97,6 +97,7 @@ test('answers from local knowledge with source and opens its timestamp', async (
   await expect(page.getByRole('article').filter({ has: source })).toContainText(
     'Fuente Clean Architecture',
   );
+  await expectNoSeriousA11yViolations(page);
   await source.click();
   await expect(page.getByRole('heading', { name: 'Fuente Clean Architecture' })).toBeVisible();
   await expect(page.getByText('Contenido de la sesión')).toBeVisible();
@@ -115,6 +116,7 @@ test.describe('recoverable failures', () => {
       await expect(alert).toContainText('Tu grabación sigue segura');
       await expect(alert).not.toContainText('Error invoking remote method');
       await expect(page.getByRole('button', { name: 'Reiniciar transcripción' })).toBeEnabled();
+      await expectNoSeriousA11yViolations(page);
     });
   });
 
@@ -162,11 +164,7 @@ test.describe('recoverable failures', () => {
       await expect(alert.getByRole('button', { name: 'Reintentar' })).toBeEnabled();
       await expect(alert).not.toContainText('Error invoking remote method');
       await expect(page.getByRole('button', { name: 'Nueva sesión' })).toBeEnabled();
+      await expectNoSeriousA11yViolations(page);
     });
   });
 });
-
-async function expectA11y(page: Page): Promise<void> {
-  const results = await new AxeBuilder({ page }).setLegacyMode(true).analyze();
-  expect(results.violations, results.violations.map((item) => item.id).join(', ')).toEqual([]);
-}

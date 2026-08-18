@@ -132,7 +132,7 @@ export function HomeView(props: Props) {
         </form>
         {knowledgeError && <ErrorNotice error={knowledgeError} onRetry={() => void ask()} />}
         {knowledge && (
-          <div className="knowledge-answer">
+          <div className="knowledge-answer" role="status" aria-live="polite">
             <h3>Respuesta</h3>
             <p>{knowledge.answer}</p>
             {knowledge.sources.length > 0 && (
