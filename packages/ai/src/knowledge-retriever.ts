@@ -7,11 +7,23 @@ export class KnowledgeRetriever {
     private readonly minimumScore = 0.42,
   ) {}
 
-  async retrieve(query: string, limit = 6): Promise<readonly KnowledgeMatch[]> {
+  async retrieve(
+    query: string,
+    limit = 6,
+    signal?: AbortSignal,
+    onRanking?: () => void,
+  ): Promise<readonly KnowledgeMatch[]> {
+    throwIfAborted(signal);
     const [embedding] = await this.embeddings.embed([`query: ${query}`]);
+    throwIfAborted(signal);
     if (!embedding) return [];
+    onRanking?.();
     return (await this.vectors.search(embedding, this.embeddings.model, limit)).filter(
       (match) => match.score >= this.minimumScore,
     );
   }
+}
+
+function throwIfAborted(signal?: AbortSignal): void {
+  if (signal?.aborted) throw new DOMException('Knowledge operation cancelled', 'AbortError');
 }

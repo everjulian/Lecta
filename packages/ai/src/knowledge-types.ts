@@ -58,3 +58,7 @@ export interface KnowledgeAnswer {
   sources: readonly KnowledgeSource[];
   insufficient: boolean;
 }
+
+export interface KnowledgeRetrieverPort {
+  retrieve(query: string, limit?: number, signal?: AbortSignal): Promise<readonly KnowledgeMatch[]>;
+}

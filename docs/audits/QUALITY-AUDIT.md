@@ -9,19 +9,19 @@
 
 Lecta conserva una dirección de dependencias saludable y protege correctamente el dominio de Electron, React, SQLite y proveedores. La grabación incremental, la cola de transcripción y los artefactos derivados son buenas decisiones. No se identificó una vulnerabilidad crítica explotable con la superficie actual.
 
-Todavía no debe considerarse release-ready. Faltan defensa en profundidad de navegación/permisos Electron, límites completos en IPC, E2E real, accesibilidad automatizada y medición reproducible de rendimiento. La búsqueda vectorial ejecuta inferencia y ranking lineal en Electron main; esto comprometerá capacidad de respuesta al crecer el corpus. La UI funciona, pero `App`, `HomeView` y una hoja CSS de 965 líneas concentran demasiadas responsabilidades.
+Todavía no debe considerarse release-ready. Faltan E2E real, accesibilidad automatizada y otras tareas detalladas abajo. Desde la auditoría inicial, H1 fue corregido: la búsqueda vectorial ejecuta inferencia y ranking lineal en un child process medido, sin bloquear Electron main. La UI funciona, pero `App`, `HomeView` y una hoja CSS de 965 líneas concentran demasiadas responsabilidades.
 
-| Área            | Puntuación /10 | Evidencia resumida                                                                  |
-| --------------- | -------------: | ----------------------------------------------------------------------------------- |
-| Architecture    |              8 | Capas claras y puertos; composition root correcto; trabajo semántico pesado en main |
-| Code Quality    |              7 | strict, sin `any`, `@ts-ignore` ni logging disperso; componentes/archivos grandes   |
-| Testing         |              5 | 39 unit/integration tests; cero E2E, visual regression o fallos UI automatizados    |
-| Security        |              7 | aislamiento, sandbox, CSP e IPC explícito; permisos/navegación e inputs mejorables  |
-| Performance     |              6 | paginación/FTS/chunks; vector scan e inferencia en main; sin benchmark estable      |
-| Accessibility   |              4 | labels y roles parciales; sin axe, focus trap, Escape ni prueba teclado completa    |
-| Design System   |              3 | lenguaje visual coherente, pero sin tokens/componentes base y ~80 colores hex       |
-| Maintainability |              6 | paquetes pequeños en backend; `HomeView`, `App` y CSS concentran cambios            |
-| Scalability     |              6 | 1.000 sesiones razonables para biblioteca; 10.000 penalizan vectores y filesystem   |
+| Área            | Puntuación /10 | Evidencia resumida                                                                 |
+| --------------- | -------------: | ---------------------------------------------------------------------------------- |
+| Architecture    |              8 | Capas claras; worker semántico aislado y reiniciable                               |
+| Code Quality    |              7 | strict, sin `any`, `@ts-ignore` ni logging disperso; componentes/archivos grandes  |
+| Testing         |              5 | 39 unit/integration tests; cero E2E, visual regression o fallos UI automatizados   |
+| Security        |              7 | aislamiento, sandbox, CSP e IPC explícito; permisos/navegación e inputs mejorables |
+| Performance     |              7 | paginación/FTS/chunks; vector scan aislado y benchmark reproducible                |
+| Accessibility   |              4 | labels y roles parciales; sin axe, focus trap, Escape ni prueba teclado completa   |
+| Design System   |              3 | lenguaje visual coherente, pero sin tokens/componentes base y ~80 colores hex      |
+| Maintainability |              6 | paquetes pequeños en backend; `HomeView`, `App` y CSS concentran cambios           |
+| Scalability     |              6 | 1.000 sesiones razonables para biblioteca; 10.000 penalizan vectores y filesystem  |
 
 ## System Map
 
@@ -36,7 +36,9 @@ BrowserWindow (sandbox, contextIsolation)
                  <- filesystem recording store
                  <- transcription queue -> Python faster-whisper child process
                  <- AIProvider -> API compatible
+           -> Knowledge Worker child process
                  <- EmbeddingProvider -> Transformers.js/ONNX
+                 <- SQLite vector index + ranking
 ```
 
 - `apps/desktop/main`: lifecycle, permisos, protocolo de audio, IPC y composition root.
@@ -48,9 +50,10 @@ BrowserWindow (sandbox, contextIsolation)
 - `packages/recording`: máquina del engine, mezcla y escritura secuencial de chunks.
 - `packages/transcription`: cola de concurrencia 1; provider sustituible.
 - `workers/transcription-worker`: child process Python/faster-whisper.
+- `workers/knowledge-worker`: child process Node para embeddings, índice y ranking.
 - `packages/ai`: generación estructurada, embeddings, retrieval y respuesta con citas.
 
-La documentación coincide en términos generales. Desviaciones: `ARCHITECTURE.md` todavía describe algunos modelos como “iniciales”; la IA semántica se ejecuta actualmente en main aunque el principio general exige sacar procesamiento pesado de la UI y de la ruta de grabación. No hay paquete `design-system`, settings ni runner E2E pese a aparecer como objetivos de producto/auditoría.
+La documentación coincide en términos generales. El trabajo semántico pesado ya fue retirado de main. No hay paquete `design-system`, settings ni runner E2E pese a aparecer como objetivos de producto/auditoría.
 
 ## Dependency Map
 
@@ -62,7 +65,7 @@ domain <- ai
 
 renderer -> shared IPC contracts only
 preload  -> shared IPC contracts + Electron
-main     -> application + infrastructure + recording/transcription/ai adapters
+main     -> application + infrastructure + recording/transcription/ai adapters + worker client
 ```
 
 No se observaron ciclos entre paquetes ni imports de infrastructure desde domain/application. `packages/infrastructure` implementa interfaces declaradas también en `packages/ai`; es una dependencia hacia un puerto, válida aunque convendría decidir a largo plazo si los puertos de conocimiento pertenecen a application.
@@ -73,13 +76,15 @@ No se confirmaron problemas CRITICAL. La auditoría no simuló corrupción físi
 
 ## High Priority
 
-### H1 — Inferencia y ranking vectorial bloquean Electron main
+### H1 — RESUELTO: inferencia y ranking vectorial fuera de Electron main
 
-- Ubicación: `TransformersEmbeddingProvider`, `IndexKnowledge`, `SqliteKnowledgeStore.search`, `knowledge-ipc.ts`.
-- Problema: la primera pregunta indexa todos los transcripts secuencialmente y el ranking carga todos los BLOB del modelo, calcula coseno y ordena en JS dentro de main.
-- Impacto: con miles de chunks la ventana puede congelarse; IPC, lifecycle y persistencia compiten con CPU/IO. A 10.000 sesiones el scan lineal y el sort completo no son aceptables.
-- Importancia: una UI congelada durante recording o recuperación es un riesgo de producto aunque la captura viva parcialmente en renderer.
-- Recomendación: ADR para `knowledge-worker`; mover embeddings/indexación/ranking a worker thread o child process. Introducir búsqueda top-k nativa (`sqlite-vec`) solo tras benchmark y plan de empaquetado. Mostrar progreso/cancelación. No se corrige automáticamente por ser un cambio arquitectónico grande.
+- Resolución: `KnowledgeWorkerClient` ejecuta un child process Node independiente para embeddings, indexación, retrieval y ranking. Los mensajes están tipados y validados; cancelación dura, timeout, crash y restart no terminan Electron main.
+- Seguridad: el worker no recibe rutas de recordings ni modifica/elimina transcripts. El reemplazo del índice derivado conserva su transacción SQLite.
+- Tests: startup, shutdown, index, query, cancel, crash, restart, mensajes inválidos y timeout forman parte de la suite automatizada.
+- Build: Vite produce `dist/knowledge-worker/index.js` como entrypoint separado.
+- Rendimiento: el benchmark sintético exacto registró para 1k/10k/100k un máximo de 14,7 ms de retraso en el coordinador. A 100k, query fue 276,0 ms, RSS del worker 188,3 MB y RSS del coordinador 40,2 MB.
+- Evidencia: [ADR-knowledge-worker.md](../adr/ADR-knowledge-worker.md) y [KNOWLEDGE-WORKER.md](../performance/KNOWLEDGE-WORKER.md).
+- Riesgo residual: M4 permanece abierto porque el scan/sort exacto sigue creciendo linealmente; no bloquea main, pero requiere benchmarks productivos antes de decidir `sqlite-vec`.
 
 ### H2 — Defensa Electron incompleta para navegación y permisos
 
@@ -101,7 +106,7 @@ No se confirmaron problemas CRITICAL. La auditoría no simuló corrupción físi
 
 - Ubicación: configuración/tests del repositorio.
 - Problema: Vitest cubre dominio, stores, queue y adapters, pero no inicia Electron ni prueba renderer + preload + IPC + persistencia. No hay Playwright, axe ni snapshots.
-- Impacto: regresiones en empaquetado, preload, canales, teclado y wiring pueden pasar con 39 tests verdes.
+- Impacto: regresiones en empaquetado, preload, canales, teclado y wiring pueden pasar con 48 tests unit/integration verdes.
 - Importancia: los siete flujos críticos cruzan procesos y no quedan certificados por tests unitarios.
 - Recomendación: añadir Playwright Electron con `LECTA_E2E=1`, userData temporal y adapters fixture. No activar audio/Whisper/red. Añadir `@axe-core/playwright`. Requiere un ADR/fixture seam antes de implementarse para no contaminar producción.
 
@@ -164,11 +169,11 @@ Transcripts existen en tabla de segmentos, FTS y knowledge chunks; embeddings a�
 
 ## Scalability Assessment
 
-| Volumen     | Biblioteca/FTS                                                           | Transcripts/UI                                                                | Vectores                                                 | Filesystem                                              |
-| ----------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------- | -------------------------------------------------------- | ------------------------------------------------------- |
-| 10 sesiones | Sin riesgo                                                               | Solo se carga transcript seleccionado                                         | Irrelevante                                              | Simple                                                  |
-| 1.000       | Índices/paginación adecuados; cuatro queries iniciales                   | Correcto si segmentos por sesión son moderados                                | Primera indexación y scan perceptibles                   | Miles de directorios tolerables                         |
-| 10.000      | FTS sigue siendo viable; `listSubjects DISTINCT` y conteos deben medirse | No cargar `session:list`; transcript individual puede requerir virtualización | Bloqueo/memoria probable; requiere worker + índice top-k | Requiere cuotas, diagnóstico de espacio y mantenimiento |
+| Volumen     | Biblioteca/FTS                                                           | Transcripts/UI                                                                | Vectores                                                                | Filesystem                                              |
+| ----------- | ------------------------------------------------------------------------ | ----------------------------------------------------------------------------- | ----------------------------------------------------------------------- | ------------------------------------------------------- |
+| 10 sesiones | Sin riesgo                                                               | Solo se carga transcript seleccionado                                         | Irrelevante                                                             | Simple                                                  |
+| 1.000       | Índices/paginación adecuados; cuatro queries iniciales                   | Correcto si segmentos por sesión son moderados                                | Primera indexación y scan perceptibles                                  | Miles de directorios tolerables                         |
+| 10.000      | FTS sigue siendo viable; `listSubjects DISTINCT` y conteos deben medirse | No cargar `session:list`; transcript individual puede requerir virtualización | Worker evita bloqueo; latencia/memoria aún pueden requerir índice top-k | Requiere cuotas, diagnóstico de espacio y mantenimiento |
 
 No se detectó N+1 en Home. `SqliteKnowledgeStore.list()` sí realiza 1 query de transcripts + 1 query por transcript durante indexación: N+1 de alta latencia a gran escala. `enrich()` realiza una query por match (máximo pequeño). `listIncomplete()` recorre todos los directorios secuencialmente al startup.
 
@@ -213,19 +218,19 @@ Snapshots en Windows con viewport fijo para Home, modal, recording, paused, tran
 
 ## Performance Evidence and Plan
 
-No existe harness de benchmark; por ello no se adjudican cifras de startup/CPU como garantía. La inspección confirma escritura secuencial de chunks y máximo un Whisper activo. Añadir mediciones repetibles de:
+Existe un harness reproducible para indexación/ranking semántico sintético y se documenta en `docs/performance/KNOWLEDGE-WORKER.md`. No mide startup/CPU global ni inferencia ONNX como garantía. La inspección confirma escritura secuencial de chunks y máximo un Whisper activo. Permanecen necesarias mediciones repetibles de:
 
 - tiempo desde launch hasta Home interactivo;
 - working set idle y durante fixture de grabación de 10 minutos;
 - latencia p50/p95 de FTS con 1k/10k sesiones sintéticas;
-- indexación y query vectorial por 1k/10k/100k chunks;
+- indexación y query vectorial productiva por 1k/10k/100k chunks y varias corridas;
 - apertura/scroll de transcript de 10k segmentos.
 
 Presupuestos iniciales propuestos: Home interactivo <2 s en equipo objetivo, FTS p95 <150 ms, ninguna tarea main >50 ms, crecimiento RAM durante grabación acotado y estable.
 
 ## Technical Debt
 
-- Falta proceso worker para conocimiento.
+- El worker de conocimiento existe; falta decidir un índice escalable solo si benchmarks productivos superan presupuestos.
 - Falta migrator central.
 - Falta error model IPC.
 - UI carece de routing/state boundaries y design system.
@@ -238,7 +243,7 @@ Presupuestos iniciales propuestos: Home interactivo <2 s en equipo objetivo, FTS
 1. **Release safety:** aplicar hardening Electron y límites IPC; corregir formato; añadir pruebas negativas.
 2. **Testability seam:** ADR de composition root para fixtures; Playwright Electron con flujos 1, 2 y 7.
 3. **Critical workflows:** completar flujos 3–6 con mocks y axe; visual baselines estables.
-4. **Responsiveness:** mover knowledge a worker y medir 1k/10k; decidir exact scan vs sqlite-vec.
+4. **Responsiveness:** completado el aislamiento de knowledge; repetir benchmark productivo antes de decidir exact scan vs sqlite-vec.
 5. **Recovery:** tolerancia a metadata corrupta, error envelopes, DB locked/backoff y diagnóstico de archivos.
 6. **Frontend:** tokens y tres componentes base; dividir hooks por capacidad; accesibilidad teclado completa.
 7. **Operación:** secure secret storage, packaging firmado, backup/restore y matriz de Windows soportada.
@@ -259,8 +264,8 @@ Presupuestos iniciales propuestos: Home interactivo <2 s en equipo objetivo, FTS
 
 - Lint: PASS
 - Typecheck: PASS
-- Unit/integration: PASS, 39/39
-- Build renderer/main/preload: PASS
+- Unit/integration: PASS, 48/48
+- Build renderer/main/preload/knowledge-worker: PASS
 - Format: PASS
 - E2E: no configurado; estrategia y seam requerido documentados
 - Accesibilidad automatizada: no configurada; análisis y plan axe documentados
@@ -275,4 +280,4 @@ Presupuestos iniciales propuestos: Home interactivo <2 s en equipo objetivo, FTS
 5. El modal responde a Escape; errores relevantes usan `role=alert`; Ask tiene nombre accesible y existe foco visible consistente.
 6. Se corrigieron los dos archivos que hacían fallar `format:check`.
 
-Los riesgos H1 y H4 permanecen abiertos deliberadamente: mover conocimiento a worker y crear fixtures E2E son cambios de arquitectura/testabilidad que deben ejecutarse como tareas separadas con ADR y validación incremental, no como refactor oportunista dentro de la auditoría.
+H1 fue resuelto posteriormente mediante child process, protocolo tipado, recuperación, tests y benchmark 1k/10k/100k. H4 permanece abierto: crear fixtures E2E sigue siendo un cambio de testabilidad separado.

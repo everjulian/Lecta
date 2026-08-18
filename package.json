@@ -8,12 +8,13 @@
   "scripts": {
     "dev": "pnpm build && electron .",
     "start": "electron .",
-    "build": "vite build --config apps/desktop/vite.config.ts && vite build --config apps/desktop/vite.main.config.ts && vite build --config apps/desktop/vite.preload.config.ts",
+    "build": "vite build --config apps/desktop/vite.config.ts && vite build --config apps/desktop/vite.main.config.ts && vite build --config apps/desktop/vite.preload.config.ts && vite build --config apps/desktop/vite.knowledge-worker.config.ts",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
+    "benchmark:knowledge": "node scripts/benchmark-knowledge-worker.mjs",
     "setup:transcription": "powershell -ExecutionPolicy Bypass -File scripts/setup-transcription.ps1"
   },
   "dependencies": {

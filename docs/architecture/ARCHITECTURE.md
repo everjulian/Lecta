@@ -12,6 +12,7 @@ Las dependencias apuntan hacia el dominio:
 Renderer React -> Preload -> IPC/Main -> Application -> Domain
                                       -> Infrastructure (implementa puertos de Application)
 Recording / Transcription / AI ------> Domain contracts when needed
+Electron main -> Knowledge Worker -> embeddings / SQLite vector index
 ```
 
 `domain` no depende de frameworks. `application` depende del dominio y define puertos. `infrastructure` implementa esos puertos. Electron ensambla las implementaciones en el composition root.
@@ -66,9 +67,14 @@ El flujo es `Transcript -> TranscriptChunker -> GenerateStructuredNotes -> AIPro
 
 `KnowledgeChunker`, `EmbeddingProvider`, `VectorStore` y `KnowledgeRetriever` forman un límite independiente. Los chunks y vectores viven localmente y preservan sesión y rango temporal. `AskKnowledge` entrega al proveedor generativo únicamente evidencia recuperada y reconstruye las citas desde SQLite; una respuesta sin evidencia válida se convierte en el resultado vacío conservador.
 
+La inferencia de embeddings, indexación, lectura de BLOBs, similitud y ranking se ejecutan en un child process Node dedicado. `KnowledgeWorkerClient` vive en el límite de main y se comunica mediante mensajes discriminados validados; main conserva únicamente coordinación, enriquecimiento de citas y síntesis. Cancelación, timeout, crash o mensajes inválidos terminan/reinician el worker sin cerrar Lecta. El worker conoce la base SQLite y el caché del modelo, pero nunca recibe rutas ni capacidades de grabación.
+
+El build produce `dist/knowledge-worker/index.js`. La decisión y sus trade-offs están en [ADR-knowledge-worker.md](../adr/ADR-knowledge-worker.md); las mediciones 1k/10k/100k están en [KNOWLEDGE-WORKER.md](../performance/KNOWLEDGE-WORKER.md). El scan exacto permanece deliberadamente hasta que benchmarks posteriores justifiquen `sqlite-vec` u otra estrategia.
+
 ## Trade-offs
 
 - Un monorepo con paquetes lógicos mejora límites y crecimiento, aunque añade configuración.
 - Los modelos iniciales distintos de `Session` son deliberadamente pequeños: evitamos inventar reglas antes de conocerlas.
-- SQLite se ejecuta únicamente en el proceso main mediante el adapter de infraestructura. Su API síncrona queda encapsulada detrás de un puerto asíncrono, lo que simplifica la consistencia local a cambio de evitar consultas largas en el hilo principal.
+- Los repositorios de aplicación ejecutan SQLite en main detrás de puertos asíncronos; el índice semántico derivado es la excepción deliberada y abre su propia conexión WAL dentro del Knowledge Worker para aislar consultas largas.
 - La validación IPC inicial es manual y pequeña. Si los contratos crecen, se evaluará una librería de esquemas mediante ADR.
+- El child process de conocimiento consume más memoria base que un Worker Thread, pero aísla fallos nativos, permite cancelación dura y protege el event loop de Electron main.
