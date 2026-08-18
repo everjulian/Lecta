@@ -136,6 +136,7 @@ function e2eEnvironment(userDataPath: string, scenario: E2EScenario): Record<str
     'LOCALAPPDATA',
     'APPDATA',
     'DISPLAY',
+    'XAUTHORITY',
     'CI',
   ]) {
     const value = process.env[name];
