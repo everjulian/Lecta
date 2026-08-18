@@ -5,8 +5,11 @@ import type {
   SessionDto,
   SessionTypeDto,
   KnowledgeAnswerDto,
+  IpcErrorDto,
 } from '../shared/session-contracts';
 import { formatDate, formatDuration, sessionStatusLabel, sessionTypeLabel } from './session-format';
+import { ErrorNotice } from './ErrorNotice';
+import { toUiError } from './ui-error';
 
 interface Props {
   sessions: readonly SessionDto[];
@@ -15,7 +18,8 @@ interface Props {
   subjects: readonly string[];
   total: number;
   incomplete: readonly IncompleteRecordingDto[];
-  error: string | null;
+  error: IpcErrorDto | null;
+  onRetryError: () => void;
   onNew: () => void;
   onSelect: (session: SessionDto) => void;
   onSearch: (query: LibraryQueryDto) => Promise<void>;
@@ -36,7 +40,7 @@ export function HomeView(props: Props) {
   const [question, setQuestion] = useState('');
   const [knowledge, setKnowledge] = useState<KnowledgeAnswerDto | null>(null);
   const [asking, setAsking] = useState(false);
-  const [knowledgeError, setKnowledgeError] = useState<string | null>(null);
+  const [knowledgeError, setKnowledgeError] = useState<IpcErrorDto | null>(null);
   const pageSize = 12;
   const filtered = Boolean(text || type || subject || dateFrom || dateTo || sort === 'OLDEST');
 
@@ -64,9 +68,7 @@ export function HomeView(props: Props) {
     try {
       setKnowledge(await window.lecta.knowledge.ask(question));
     } catch (cause) {
-      setKnowledgeError(
-        cause instanceof Error ? cause.message : 'No se pudo consultar el conocimiento.',
-      );
+      setKnowledgeError(toUiError(cause));
     } finally {
       setAsking(false);
     }
@@ -83,11 +85,7 @@ export function HomeView(props: Props) {
           Nueva sesión
         </button>
       </header>
-      {props.error && (
-        <p className="error-banner" role="alert">
-          {props.error}
-        </p>
-      )}
+      {props.error && <ErrorNotice error={props.error} onRetry={props.onRetryError} />}
       {props.incomplete.map((recording) => (
         <aside className="recovery-banner" key={recording.sessionId}>
           <div>
@@ -132,11 +130,7 @@ export function HomeView(props: Props) {
             {asking ? 'Buscando…' : 'Preguntar'}
           </button>
         </form>
-        {knowledgeError && (
-          <p className="error-banner" role="alert">
-            {knowledgeError}
-          </p>
-        )}
+        {knowledgeError && <ErrorNotice error={knowledgeError} onRetry={() => void ask()} />}
         {knowledge && (
           <div className="knowledge-answer" role="status" aria-live="polite">
             <h3>Respuesta</h3>

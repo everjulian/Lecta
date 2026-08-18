@@ -6,6 +6,7 @@ import type {
   TranscriptionResourceMode,
 } from '../shared/session-contracts';
 import { formatTimestamp } from './session-format';
+import { ErrorNotice } from './ErrorNotice';
 
 interface Props {
   job: TranscriptionJobDto | null;
@@ -92,11 +93,7 @@ export function TranscriptPanel(props: Props) {
         <strong>Grabación guardada ✓</strong>
         <p>Transcribe localmente sin enviar audio a internet.</p>
       </div>
-      {props.job?.error && (
-        <p className="form-error" role="alert">
-          {props.job.error}
-        </p>
-      )}
+      {props.job?.error && <ErrorNotice error={props.job.error} onRetry={props.onRestart} />}
       <div className="transcription-options">
         <label>
           Modelo

@@ -40,6 +40,28 @@ export const aiChannels = {
 export const knowledgeChannels = { ask: 'knowledge:ask' } as const;
 export const runtimeChannels = { getMode: 'runtime:get-mode' } as const;
 
+export const errorCodes = [
+  'RECORDING_DEVICE_UNAVAILABLE',
+  'RECORDING_FILE_MISSING',
+  'TRANSCRIPTION_FAILED',
+  'AI_UNAVAILABLE',
+  'KNOWLEDGE_INDEX_FAILED',
+  'DATABASE_BUSY',
+  'STORAGE_FULL',
+  'UNKNOWN_ERROR',
+] as const;
+export type ErrorCode = (typeof errorCodes)[number];
+export interface IpcErrorDto {
+  code: ErrorCode;
+  userMessage: string;
+  safeStateMessage: string;
+  retryable: boolean;
+  technicalDetailsId: string;
+}
+export type IpcResult<T> =
+  | { readonly success: true; readonly data: T }
+  | { readonly success: false; readonly error: IpcErrorDto };
+
 export const sessionTypes = ['CLASS', 'MEETING', 'OTHER'] as const;
 export type SessionTypeDto = (typeof sessionTypes)[number];
 export type SessionStatusDto =
@@ -166,7 +188,7 @@ export interface TranscriptionJobDto extends TranscriptionRequestDto {
   id: string;
   status: TranscriptionJobStatusDto;
   progress: number;
-  error: string | null;
+  error: IpcErrorDto | null;
   createdAt: string;
   updatedAt: string;
 }

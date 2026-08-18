@@ -407,6 +407,20 @@ p {
   color: #9a3f3f;
   font-size: 13px;
 }
+.error-banner {
+  display: grid;
+  gap: 7px;
+}
+.error-banner strong {
+  font-size: 14px;
+}
+.error-banner .secondary-button {
+  width: fit-content;
+  margin-top: 3px;
+}
+.error-banner small {
+  color: #806868;
+}
 .error-banner.compact {
   margin: 22px auto 0;
 }

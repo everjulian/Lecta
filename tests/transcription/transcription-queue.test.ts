@@ -166,7 +166,7 @@ describe('TranscriptionQueue', () => {
       resourceMode: 'LIGHT',
     });
     await vi.waitFor(async () => expect((await jobs.getById(job.id))?.status).toBe('FAILED'));
-    expect((await jobs.getById(job.id))?.error).toContain('model unavailable');
+    expect((await jobs.getById(job.id))?.error).toBe('TRANSCRIPTION_FAILED');
     const restarted = await queue.restart(job.id);
     expect(restarted.status).toBe('QUEUED');
   });

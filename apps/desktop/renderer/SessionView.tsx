@@ -7,16 +7,19 @@ import type {
   TranscriptionResourceMode,
   StructuredNotesDto,
   AIGenerationProgressDto,
+  IpcErrorDto,
 } from '../shared/session-contracts';
 import { formatDuration, sessionStatusLabel, sessionTypeLabel } from './session-format';
 import type { MicrophoneOption } from './recording/electron-engine';
 import { SessionMaterials } from './SessionMaterials';
+import { ErrorNotice } from './ErrorNotice';
 
 interface Props {
   session: SessionDto;
   microphones: readonly MicrophoneOption[];
   microphoneId: string;
-  error: string | null;
+  error: IpcErrorDto | null;
+  onRetryError: () => void;
   onBack: () => void;
   onStart: () => void;
   onPause: () => void;
@@ -35,7 +38,7 @@ interface Props {
   onRestartTranscription: () => void;
   notes: StructuredNotesDto | null;
   aiProgress: AIGenerationProgressDto | null;
-  aiError: string | null;
+  aiError: IpcErrorDto | null;
   onGenerateNotes: () => void;
   initialTimestamp: number | null;
 }
@@ -45,6 +48,7 @@ export function SessionView({
   microphones,
   microphoneId,
   error,
+  onRetryError,
   onBack,
   onStart,
   onPause,
@@ -120,11 +124,7 @@ export function SessionView({
             </select>
           </label>
         )}
-        {error && (
-          <p className="error-banner compact" role="alert">
-            {error}
-          </p>
-        )}
+        {error && <ErrorNotice error={error} onRetry={onRetryError} compact />}
         <div className="recording-actions">
           {session.status === 'IDLE' && (
             <button className="record-button" onClick={onStart}>

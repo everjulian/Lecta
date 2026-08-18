@@ -41,6 +41,8 @@ El proceso main es el composition root. El preload expone una API pequeña media
 
 Cada `BrowserWindow` usa `contextIsolation: true`, `nodeIntegration: false` y sandbox. Los canales IPC son constantes compartidas y los inputs se validan al entrar al proceso main. Nunca se expone `ipcRenderer` completo.
 
+Todos los handlers IPC responden con un resultado discriminado `success/data` o `success/error`. Main clasifica los fallos con códigos estables, registra únicamente metadata técnica saneada y nunca envía excepciones, stacks ni mensajes internos al renderer. El preload valida y desempaqueta el resultado. La política completa está en [ERRORS-AND-RECOVERY.md](ERRORS-AND-RECOVERY.md).
+
 ## Estado de sesión
 
 Transiciones válidas: `IDLE -> RECORDING`, `RECORDING -> PAUSED | PROCESSING`, `PAUSED -> RECORDING | PROCESSING`, `PROCESSING -> COMPLETED | FAILED`. Los estados terminales no transicionan. El dominio rechaza cualquier otro cambio.

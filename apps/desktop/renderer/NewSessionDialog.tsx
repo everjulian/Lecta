@@ -1,8 +1,9 @@
 import { useEffect, useRef, useState, type FormEvent } from 'react';
-import type { CreateSessionInput, SessionTypeDto } from '../shared/session-contracts';
+import type { CreateSessionInput, IpcErrorDto, SessionTypeDto } from '../shared/session-contracts';
+import { ErrorNotice } from './ErrorNotice';
 
 interface Props {
-  error: string | null;
+  error: IpcErrorDto | null;
   onCancel: () => void;
   onSubmit: (input: CreateSessionInput) => Promise<void>;
 }
@@ -141,11 +142,7 @@ export function NewSessionDialog({ error, onCancel, onSubmit }: Props) {
               placeholder="Ej. Universidad, parcial, arquitectura"
             />
           </label>
-          {error && (
-            <p className="form-error" role="alert">
-              {error}
-            </p>
-          )}
+          {error && <ErrorNotice error={error} />}
           <div className="dialog-actions">
             <button type="button" className="text-button" onClick={onCancel}>
               Cancelar
