@@ -1,18 +1,21 @@
 import type { AIProvider } from './ai-types';
-import type { KnowledgeAnswer, KnowledgeSessionReader } from './knowledge-types';
-import type { KnowledgeRetriever } from './knowledge-retriever';
+import type {
+  KnowledgeAnswer,
+  KnowledgeRetrieverPort,
+  KnowledgeSessionReader,
+} from './knowledge-types';
 
 export const INSUFFICIENT_ANSWER = 'No encontré información suficiente en tus sesiones.';
 
 export class AskKnowledge {
   constructor(
-    private readonly retriever: KnowledgeRetriever,
+    private readonly retriever: KnowledgeRetrieverPort,
     private readonly sessions: KnowledgeSessionReader,
     private readonly ai: AIProvider,
   ) {}
 
   async execute(question: string, signal: AbortSignal): Promise<KnowledgeAnswer> {
-    const matches = await this.retriever.retrieve(question);
+    const matches = await this.retriever.retrieve(question, 6, signal);
     if (matches.length === 0) return emptyAnswer();
     const evidence = await this.sessions.enrich(matches);
     if (evidence.length === 0) return emptyAnswer();

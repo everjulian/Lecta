@@ -27,12 +27,10 @@ import { FasterWhisperProvider } from '../../../workers/transcription-worker/src
 import {
   AskKnowledge,
   GenerateStructuredNotes,
-  IndexKnowledge,
-  KnowledgeRetriever,
   OpenAICompatibleAIProvider,
-  TransformersEmbeddingProvider,
   type AIProvider,
 } from '@lecta/ai';
+import { KnowledgeWorkerClient } from '../../../workers/knowledge-worker/src/knowledge-worker-client';
 
 export function createContainer(userDataPath: string, appPath: string) {
   const databasePath = path.join(userDataPath, 'lecta.sqlite');
@@ -43,7 +41,8 @@ export function createContainer(userDataPath: string, appPath: string) {
   sessions.ensureLibraryIndex();
   const recordings = new FileRecordingStore(path.join(userDataPath, 'recordings'));
   const preferences = new FilePreferenceStore(userDataPath);
-  const shared = { sessions, clock: new SystemClock(), logger: new NullLogger() };
+  const logger = new NullLogger();
+  const shared = { sessions, clock: new SystemClock(), logger };
   const transcriptionQueue = new TranscriptionQueue({
     jobs: transcriptionStore,
     transcripts: transcriptionStore,
@@ -64,13 +63,20 @@ export function createContainer(userDataPath: string, appPath: string) {
     generateId: () => crypto.randomUUID(),
     now: () => new Date(),
   });
-  const embeddings = new TransformersEmbeddingProvider(
-    process.env['LECTA_EMBEDDING_MODEL'] ?? 'Xenova/multilingual-e5-small',
-    path.join(userDataPath, 'models', 'embeddings'),
-  );
-  const indexKnowledge = new IndexKnowledge(knowledgeStore, embeddings, knowledgeStore);
+  const knowledgeWorker = new KnowledgeWorkerClient({
+    entrypoint: path.join(appPath, 'dist', 'knowledge-worker', 'index.js'),
+    databasePath,
+    modelDirectory: path.join(userDataPath, 'models', 'embeddings'),
+    model: process.env['LECTA_EMBEDDING_MODEL'] ?? 'Xenova/multilingual-e5-small',
+    logger,
+  });
+  const indexKnowledge = {
+    execute: (signal?: AbortSignal) => knowledgeWorker.index(signal),
+  };
   const askKnowledge = new AskKnowledge(
-    new KnowledgeRetriever(embeddings, knowledgeStore),
+    {
+      retrieve: (query, limit, signal) => knowledgeWorker.query(query, limit, signal),
+    },
     knowledgeStore,
     aiProvider,
   );
@@ -84,6 +90,7 @@ export function createContainer(userDataPath: string, appPath: string) {
     structuredNotes,
     generateStructuredNotes,
     knowledgeStore,
+    knowledgeWorker,
     indexKnowledge,
     askKnowledge,
     useCases: {

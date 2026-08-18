@@ -86,6 +86,7 @@ void app.whenReady().then(async () => {
   app.on('before-quit', () => {
     unsubscribeTranscription();
     container.transcriptionQueue.shutdown();
+    void container.knowledgeWorker.shutdown();
     container.transcriptionStore.close();
     container.structuredNotes.close();
     container.knowledgeStore.close();

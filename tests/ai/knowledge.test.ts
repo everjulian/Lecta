@@ -58,7 +58,7 @@ describe('semantic knowledge', () => {
       sessionDate: new Date('2026-08-07'),
     };
     const answer = new AskKnowledge(
-      { retrieve: () => Promise.resolve([match]) } as unknown as KnowledgeRetriever,
+      { retrieve: () => Promise.resolve([match]) },
       { enrich: () => Promise.resolve([source]) },
       {
         generateJson: () =>
@@ -77,7 +77,7 @@ describe('semantic knowledge', () => {
 
   it('uses the safe empty answer for no evidence, unknown citations and invalid responses', async () => {
     const noEvidence = new AskKnowledge(
-      { retrieve: () => Promise.resolve([]) } as unknown as KnowledgeRetriever,
+      { retrieve: () => Promise.resolve([]) },
       { enrich: () => Promise.resolve([]) },
       { generateJson: vi.fn() },
     );
@@ -97,7 +97,7 @@ describe('semantic knowledge', () => {
       { malformed: true },
     ]) {
       const service = new AskKnowledge(
-        { retrieve: () => Promise.resolve([match]) } as unknown as KnowledgeRetriever,
+        { retrieve: () => Promise.resolve([match]) },
         {
           enrich: () =>
             Promise.resolve([{ ...match, sessionTitle: 'Clase', sessionDate: new Date() }]),
