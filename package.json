@@ -16,6 +16,7 @@
     "format": "prettier --write .",
     "format:check": "prettier --check .",
     "benchmark:knowledge": "node scripts/benchmark-knowledge-worker.mjs",
+    "benchmark:performance": "pnpm build && node scripts/performance-baseline.mjs",
     "setup:transcription": "powershell -ExecutionPolicy Bypass -File scripts/setup-transcription.ps1"
   },
   "dependencies": {

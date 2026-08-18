@@ -1,0 +1,183 @@
+{
+  "schemaVersion": 1,
+  "generatedAt": "2026-08-18T17:37:49.159Z",
+  "status": "observational-baseline",
+  "environment": {
+    "hostname": "DESKTOP-UP80P5A",
+    "platform": "win32",
+    "osRelease": "10.0.26200",
+    "architecture": "x64",
+    "cpu": "13th Gen Intel(R) Core(TM) i9-13900H",
+    "logicalCpuCount": 20,
+    "totalMemoryBytes": 16794603520,
+    "freeMemoryAtStartBytes": 3820175360,
+    "node": "v24.13.0",
+    "electron": "43.4.0",
+    "lecta": "0.1.0",
+    "electronLaunchFlags": ["--disable-gpu"]
+  },
+  "budgets": {
+    "homeInteractiveMs": 2000,
+    "ftsP95Ms": 150,
+    "avoidableMainSynchronousTaskMs": 50,
+    "enforcement": false,
+    "note": "Initial observations, not guarantees until target hardware is defined."
+  },
+  "metrics": {
+    "electron": {
+      "startupToHomeInteractiveMs": {
+        "samples": 5,
+        "p50": 479.71,
+        "p95": 607.84,
+        "min": 446.47,
+        "max": 607.84
+      },
+      "idleMemory": {
+        "samples": 5,
+        "p50Bytes": 308264960,
+        "p95Bytes": 309137408,
+        "p50MiB": 293.98,
+        "p95MiB": 294.82
+      },
+      "recordingFixtureMemory": {
+        "samples": 8,
+        "p50Bytes": 347160576,
+        "p95Bytes": 348684288,
+        "p50MiB": 331.08,
+        "p95MiB": 332.53,
+        "growthBytes": 3776512,
+        "sampleWindowSeconds": 4
+      }
+    },
+    "fts": [
+      {
+        "dataset": {
+          "sessions": 1000
+        },
+        "buildDurationMs": 9.56,
+        "queryMs": {
+          "samples": 10,
+          "p50": 52.02,
+          "p95": 60.07,
+          "min": 49.09,
+          "max": 60.07
+        },
+        "memory": {
+          "bytes": 51089408,
+          "mebibytes": 48.72
+        }
+      },
+      {
+        "dataset": {
+          "sessions": 10000
+        },
+        "buildDurationMs": 106.71,
+        "queryMs": {
+          "samples": 10,
+          "p50": 14961.88,
+          "p95": 15655.51,
+          "min": 6061.07,
+          "max": 15655.51
+        },
+        "memory": {
+          "bytes": 54718464,
+          "mebibytes": 52.18
+        }
+      }
+    ],
+    "knowledge": [
+      {
+        "dataset": {
+          "chunks": 1000,
+          "dimensions": 64
+        },
+        "indexMs": {
+          "samples": 5,
+          "p50": 6.93,
+          "p95": 8.16,
+          "min": 5.63,
+          "max": 8.16
+        },
+        "queryMs": {
+          "samples": 5,
+          "p50": 4.13,
+          "p95": 4.55,
+          "min": 3.31,
+          "max": 4.55
+        },
+        "coordinatorMaxLagMs": 24.44,
+        "workerPeakMemory": {
+          "bytes": 52441088,
+          "mebibytes": 50.01
+        }
+      },
+      {
+        "dataset": {
+          "chunks": 10000,
+          "dimensions": 64
+        },
+        "indexMs": {
+          "samples": 5,
+          "p50": 30.25,
+          "p95": 31.12,
+          "min": 28.77,
+          "max": 31.12
+        },
+        "queryMs": {
+          "samples": 5,
+          "p50": 38.06,
+          "p95": 38.69,
+          "min": 37.58,
+          "max": 38.69
+        },
+        "coordinatorMaxLagMs": 20.31,
+        "workerPeakMemory": {
+          "bytes": 70664192,
+          "mebibytes": 67.39
+        }
+      },
+      {
+        "dataset": {
+          "chunks": 100000,
+          "dimensions": 64
+        },
+        "indexMs": {
+          "samples": 5,
+          "p50": 396.73,
+          "p95": 426.51,
+          "min": 374.1,
+          "max": 426.51
+        },
+        "queryMs": {
+          "samples": 5,
+          "p50": 350.59,
+          "p95": 355.86,
+          "min": 347.83,
+          "max": 355.86
+        },
+        "coordinatorMaxLagMs": 23.19,
+        "workerPeakMemory": {
+          "bytes": 212905984,
+          "mebibytes": 203.04
+        }
+      }
+    ],
+    "transcript": {
+      "dataset": {
+        "segments": 10000
+      },
+      "writeDurationMs": 45.21,
+      "readMs": {
+        "samples": 10,
+        "p50": 23.21,
+        "p95": 30.61,
+        "min": 21.1,
+        "max": 30.61
+      },
+      "memory": {
+        "bytes": 116756480,
+        "mebibytes": 111.35
+      }
+    }
+  }
+}
