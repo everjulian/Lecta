@@ -32,7 +32,7 @@ La suite construye Lecta antes de iniciar Electron. No requiere micrófono, audi
 
 ## CI y artefactos
 
-El job `E2E` se ejecuta después de `Quality` mediante `xvfb-run` en Linux. Las variables de Hugging Face y Transformers fuerzan modo offline. Playwright usa un único worker para evitar competencia entre instancias de Electron.
+El job `E2E` se ejecuta después de `Quality` mediante `xvfb-run` en Linux. El fixture hereda `DISPLAY` y `XAUTHORITY` para que Electron pueda autenticarse contra esa pantalla virtual. Las variables de Hugging Face y Transformers fuerzan modo offline. Playwright usa un único worker para evitar competencia entre instancias de Electron.
 
 Screenshots y traces se conservan únicamente cuando una prueba falla, en `test-results/e2e`, y GitHub Actions los publica durante siete días. Un trace puede abrirse localmente con:
 
