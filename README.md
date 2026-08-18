@@ -6,10 +6,12 @@ Lecta es una aplicación desktop local-first para capturar clases y reuniones y,
 
 Lecta incluye sesiones persistentes en SQLite, grabación real en Windows de audio del sistema y micrófono, transcripción offline con faster-whisper y generación configurable de material de estudio con IA. La captura usa chunks WebM/Opus recuperables y nunca ejecuta transcripción ni IA mientras está grabando.
 
+La [documentación técnica](docs/introduction/what-is-lecta.md) reúne arquitectura, desarrollo, producto, diseño, calidad, decisiones y roadmap. Para navegarla como sitio local ejecuta `pnpm docs:dev`.
+
 ## Requisitos y comandos
 
 - Node.js 22 o superior
-- pnpm 10 o superior
+- pnpm 11 o superior
 
 ```bash
 pnpm install
@@ -18,12 +20,15 @@ pnpm build
 pnpm lint
 pnpm typecheck
 pnpm test
+pnpm docs:dev
+pnpm docs:build
 pnpm setup:transcription
 ```
 
 ## Organización
 
 - `apps/desktop`: proceso main, preload seguro y renderer React.
+- `apps/docs`: configuración, navegación y estilos del sitio Docusaurus.
 - `packages/domain`: entidades y reglas puras.
 - `packages/application`: casos de uso y puertos.
 - `packages/infrastructure`: adapters técnicos para SQLite y memoria.
@@ -31,6 +36,7 @@ pnpm setup:transcription
 - `packages/shared`: abstracciones transversales pequeñas.
 - `workers`: procesos pesados futuros.
 - `tests`: pruebas de dominio y aplicación.
+- `docs`: fuente única de la documentación técnica publicada por Docusaurus.
 
 Consulta [ARCHITECTURE.md](docs/architecture/ARCHITECTURE.md) para las reglas de dependencia.
 

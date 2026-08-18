@@ -226,7 +226,7 @@ Existe un harness reproducible para indexación/ranking semántico sintético y 
 - indexación y query vectorial productiva por 1k/10k/100k chunks y varias corridas;
 - apertura/scroll de transcript de 10k segmentos.
 
-Presupuestos iniciales propuestos: Home interactivo <2 s en equipo objetivo, FTS p95 <150 ms, ninguna tarea main >50 ms, crecimiento RAM durante grabación acotado y estable.
+Presupuestos iniciales propuestos: Home interactivo &lt;2 s en equipo objetivo, FTS p95 &lt;150 ms, ninguna tarea main >50 ms, crecimiento RAM durante grabación acotado y estable.
 
 ## Technical Debt
 

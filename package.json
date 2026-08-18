@@ -17,6 +17,8 @@
     "format:check": "prettier --check .",
     "benchmark:knowledge": "node scripts/benchmark-knowledge-worker.mjs",
     "benchmark:performance": "pnpm build && node scripts/performance-baseline.mjs",
+    "docs:dev": "pnpm --filter @lecta/docs start",
+    "docs:build": "pnpm --filter @lecta/docs build",
     "setup:transcription": "powershell -ExecutionPolicy Bypass -File scripts/setup-transcription.ps1"
   },
   "dependencies": {
