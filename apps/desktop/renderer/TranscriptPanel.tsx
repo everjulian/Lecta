@@ -71,12 +71,12 @@ export function TranscriptPanel(props: Props) {
 
   if (props.job && !['FAILED', 'CANCELLED'].includes(props.job.status)) {
     return (
-      <section className="transcription-progress">
+      <section className="transcription-progress" role="status" aria-live="polite">
         <div>
           <strong>{jobLabel[props.job.status]}</strong>
           <span>{props.job.progress}%</span>
         </div>
-        <progress value={props.job.progress} max="100" />
+        <progress aria-label="Progreso de transcripción" value={props.job.progress} max="100" />
         {!['SAVING', 'COMPLETED'].includes(props.job.status) && (
           <button className="text-button danger" onClick={props.onCancel}>
             Cancelar
@@ -92,7 +92,11 @@ export function TranscriptPanel(props: Props) {
         <strong>Grabación guardada ✓</strong>
         <p>Transcribe localmente sin enviar audio a internet.</p>
       </div>
-      {props.job?.error && <p className="form-error">{props.job.error}</p>}
+      {props.job?.error && (
+        <p className="form-error" role="alert">
+          {props.job.error}
+        </p>
+      )}
       <div className="transcription-options">
         <label>
           Modelo

@@ -1,4 +1,4 @@
-import { useEffect, useState, type FormEvent } from 'react';
+import { useEffect, useRef, useState, type FormEvent } from 'react';
 import type { CreateSessionInput, SessionTypeDto } from '../shared/session-contracts';
 
 interface Props {
@@ -8,18 +8,47 @@ interface Props {
 }
 
 export function NewSessionDialog({ error, onCancel, onSubmit }: Props) {
+  const dialog = useRef<HTMLElement>(null);
+  const titleInput = useRef<HTMLInputElement>(null);
+  const onCancelRef = useRef(onCancel);
   const [title, setTitle] = useState('');
   const [type, setType] = useState<SessionTypeDto>('CLASS');
   const [subject, setSubject] = useState('');
   const [tags, setTags] = useState('');
   const [saving, setSaving] = useState(false);
+
   useEffect(() => {
-    const closeOnEscape = (event: KeyboardEvent) => {
-      if (event.key === 'Escape') onCancel();
-    };
-    window.addEventListener('keydown', closeOnEscape);
-    return () => window.removeEventListener('keydown', closeOnEscape);
+    onCancelRef.current = onCancel;
   }, [onCancel]);
+  useEffect(() => {
+    const previousFocus =
+      document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    const handleKeyboard = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        event.preventDefault();
+        onCancelRef.current();
+        return;
+      }
+      if (event.key !== 'Tab' || !dialog.current) return;
+      const focusable = getFocusable(dialog.current);
+      if (focusable.length === 0) return;
+      const first = focusable[0];
+      const last = focusable[focusable.length - 1];
+      if (event.shiftKey && document.activeElement === first) {
+        event.preventDefault();
+        last?.focus();
+      } else if (!event.shiftKey && document.activeElement === last) {
+        event.preventDefault();
+        first?.focus();
+      }
+    };
+    window.addEventListener('keydown', handleKeyboard);
+    titleInput.current?.focus();
+    return () => {
+      window.removeEventListener('keydown', handleKeyboard);
+      previousFocus?.focus();
+    };
+  }, []);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
@@ -39,6 +68,7 @@ export function NewSessionDialog({ error, onCancel, onSubmit }: Props) {
   return (
     <div className="dialog-backdrop" role="presentation" onMouseDown={onCancel}>
       <section
+        ref={dialog}
         className="dialog"
         role="dialog"
         aria-modal="true"
@@ -58,7 +88,7 @@ export function NewSessionDialog({ error, onCancel, onSubmit }: Props) {
           <label>
             Título
             <input
-              autoFocus
+              ref={titleInput}
               required
               maxLength={120}
               value={title}
@@ -128,4 +158,12 @@ export function NewSessionDialog({ error, onCancel, onSubmit }: Props) {
       </section>
     </div>
   );
+}
+
+function getFocusable(container: HTMLElement): HTMLElement[] {
+  return Array.from(
+    container.querySelectorAll<HTMLElement>(
+      'button:not([disabled]), input:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    ),
+  ).filter((element) => !element.hidden);
 }
