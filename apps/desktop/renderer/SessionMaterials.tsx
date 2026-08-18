@@ -1,4 +1,4 @@
-import { useRef, useState } from 'react';
+import { useRef, useState, type KeyboardEvent } from 'react';
 import type {
   AIGenerationProgressDto,
   StructuredNotesDto,
@@ -11,6 +11,12 @@ import { formatTimestamp } from './session-format';
 import { TranscriptPanel } from './TranscriptPanel';
 
 type Tab = 'summary' | 'notes' | 'transcript' | 'audio';
+const tabs: ReadonlyArray<readonly [Tab, string]> = [
+  ['summary', 'Resumen'],
+  ['notes', 'Apuntes'],
+  ['transcript', 'Transcripción'],
+  ['audio', 'Audio'],
+];
 interface Props {
   notes: StructuredNotesDto | null;
   aiProgress: AIGenerationProgressDto | null;
@@ -31,25 +37,38 @@ interface Props {
 export function SessionMaterials(props: Props) {
   const [tab, setTab] = useState<Tab>(props.initialTimestamp === null ? 'summary' : 'transcript');
   const audio = useRef<HTMLAudioElement>(null);
+  const tabButtons = useRef<Array<HTMLButtonElement | null>>([]);
   const seek = (seconds: number) => {
     if (!audio.current) return;
     audio.current.currentTime = seconds;
     void audio.current.play();
   };
   const generating = props.aiProgress !== null;
+  const selectTab = (index: number) => {
+    const next = tabs[index];
+    if (!next) return;
+    setTab(next[0]);
+    tabButtons.current[index]?.focus();
+  };
+  const handleTabKey = (event: KeyboardEvent<HTMLButtonElement>, index: number) => {
+    let next: number | null = null;
+    if (event.key === 'ArrowRight') next = (index + 1) % tabs.length;
+    else if (event.key === 'ArrowLeft') next = (index - 1 + tabs.length) % tabs.length;
+    else if (event.key === 'Home') next = 0;
+    else if (event.key === 'End') next = tabs.length - 1;
+    if (next === null) return;
+    event.preventDefault();
+    selectTab(next);
+  };
 
   return (
     <section className="materials">
       <div className="material-tabs" role="tablist" aria-label="Contenido de la sesión">
-        {(
-          [
-            ['summary', 'Resumen'],
-            ['notes', 'Apuntes'],
-            ['transcript', 'Transcripción'],
-            ['audio', 'Audio'],
-          ] as const
-        ).map(([id, label]) => (
+        {tabs.map(([id, label], index) => (
           <button
+            ref={(element) => {
+              tabButtons.current[index] = element;
+            }}
             key={id}
             id={`material-tab-${id}`}
             role="tab"
@@ -58,6 +77,7 @@ export function SessionMaterials(props: Props) {
             tabIndex={tab === id ? 0 : -1}
             className={tab === id ? 'active' : ''}
             onClick={() => setTab(id)}
+            onKeyDown={(event) => handleTabKey(event, index)}
           >
             {label}
           </button>
@@ -104,7 +124,11 @@ export function SessionMaterials(props: Props) {
           ) : (
             <GenerateState {...props} />
           )}
-          {props.aiError && <p className="error-banner">{props.aiError}</p>}
+          {props.aiError && (
+            <p className="error-banner" role="alert">
+              {props.aiError}
+            </p>
+          )}
           {props.aiProgress && <AIProgress value={props.aiProgress} />}
         </div>
       )}
@@ -243,12 +267,12 @@ function AIProgress({ value }: { value: AIGenerationProgressDto }) {
     SAVING: 'Guardando…',
   };
   return (
-    <div className="ai-progress">
+    <div className="ai-progress" role="status" aria-live="polite">
       <div>
         <strong>{labels[value.stage]}</strong>
         <span>{value.progress}%</span>
       </div>
-      <progress value={value.progress} max="100" />
+      <progress aria-label="Progreso de generación de apuntes" value={value.progress} max="100" />
     </div>
   );
 }

@@ -22,7 +22,7 @@ export async function finishRecording(page: Page): Promise<void> {
   await page.getByRole('button', { name: 'Grabar' }).click();
   await expect(page.getByText('Grabando', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Pausar' }).click();
-  await expect(page.getByText('En pausa', { exact: true })).toBeVisible();
+  await expect(page.getByText('Pausado', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Reanudar' }).click();
   await expect(page.getByText('Grabando', { exact: true })).toBeVisible();
   await page.getByRole('button', { name: 'Finalizar' }).click();

@@ -83,7 +83,11 @@ export function HomeView(props: Props) {
           Nueva sesión
         </button>
       </header>
-      {props.error && <p className="error-banner">{props.error}</p>}
+      {props.error && (
+        <p className="error-banner" role="alert">
+          {props.error}
+        </p>
+      )}
       {props.incomplete.map((recording) => (
         <aside className="recovery-banner" key={recording.sessionId}>
           <div>
@@ -134,7 +138,7 @@ export function HomeView(props: Props) {
           </p>
         )}
         {knowledge && (
-          <div className="knowledge-answer">
+          <div className="knowledge-answer" role="status" aria-live="polite">
             <h3>Respuesta</h3>
             <p>{knowledge.answer}</p>
             {knowledge.sources.length > 0 && (

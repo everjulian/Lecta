@@ -9,7 +9,7 @@
 }
 body {
   margin: 0;
-  min-width: 680px;
+  min-width: 320px;
   min-height: 100vh;
 }
 button,
@@ -22,7 +22,8 @@ button {
 }
 button:focus-visible,
 input:focus-visible,
-select:focus-visible {
+select:focus-visible,
+[tabindex]:focus-visible {
   outline: 3px solid #3c765e;
   outline-offset: 2px;
 }
@@ -267,7 +268,7 @@ p {
   align-items: center;
   gap: 18px;
   margin-top: 28px;
-  color: #748079;
+  color: #5f6b64;
   font-size: 12px;
 }
 .pagination button:disabled {
@@ -351,7 +352,7 @@ p {
   grid-template-columns: 78px 106px 76px 108px 14px;
   align-items: center;
   gap: 14px;
-  color: #748079;
+  color: #5f6b64;
   font-size: 13px;
 }
 .status-dot {
@@ -950,6 +951,39 @@ legend {
 @keyframes pulse {
   50% {
     box-shadow: 0 0 0 12px #d6574e0e;
+  }
+}
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+@media (max-width: 600px) {
+  .app-shell {
+    width: calc(100% - 24px);
+    padding-top: 28px;
+  }
+  .home-header,
+  .material-heading,
+  .transcript-heading {
+    align-items: stretch;
+    flex-direction: column;
+  }
+  .recording-actions,
+  .dialog-actions {
+    flex-wrap: wrap;
+  }
+  .filter-row,
+  .session-meta {
+    grid-template-columns: 1fr;
+  }
+  .material-tabs {
+    overflow-x: auto;
   }
 }
 @media (max-width: 860px) {
