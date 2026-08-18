@@ -1,11 +1,13 @@
-import { ElectronRecordingAdapter } from '@lecta/recording';
+import { ElectronRecordingAdapter, type RecordingEngine } from '@lecta/recording';
+import { FakeRecordingEngine } from './fake-recording-engine';
 
 export interface MicrophoneOption {
   deviceId: string;
   label: string;
 }
 
-export function createRecordingEngine(): ElectronRecordingAdapter {
+export function createRecordingEngine(): RecordingEngine {
+  if (window.lecta.runtime.e2e) return new FakeRecordingEngine();
   return new ElectronRecordingAdapter({
     getSystemStream: async () => {
       const stream = await navigator.mediaDevices.getDisplayMedia({ audio: true, video: true });
@@ -32,6 +34,8 @@ export function createRecordingEngine(): ElectronRecordingAdapter {
 }
 
 export async function listMicrophones(): Promise<readonly MicrophoneOption[]> {
+  if (window.lecta.runtime.e2e)
+    return [{ deviceId: 'e2e-microphone', label: 'Micrófono de prueba' }];
   const devices = await navigator.mediaDevices.enumerateDevices();
   return devices
     .filter((device) => device.kind === 'audioinput')

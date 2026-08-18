@@ -59,13 +59,43 @@ jobs:
       - name: Build
         run: pnpm build
 
-  # Prepared for the Playwright phase. Remove the false condition only after
-  # the E2E suite and its browser installation are committed.
   e2e:
     name: E2E
-    if: ${{ false }}
     needs: quality
     runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CI: 'true'
+      HF_HUB_OFFLINE: '1'
+      TRANSFORMERS_OFFLINE: '1'
     steps:
-      - name: E2E not enabled yet
-        run: echo "Playwright E2E will be enabled in its dedicated phase."
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install pnpm
+        uses: pnpm/action-setup@v4
+        with:
+          version: 11.16.0
+          run_install: false
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version-file: .nvmrc
+          cache: pnpm
+          cache-dependency-path: pnpm-lock.yaml
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Run Electron E2E tests
+        run: xvfb-run -a pnpm test:e2e
+
+      - name: Upload failure artifacts
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: electron-e2e-failure-${{ github.run_attempt }}
+          path: test-results/e2e
+          if-no-files-found: ignore
+          retention-days: 7

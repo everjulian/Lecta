@@ -38,6 +38,7 @@ export const aiChannels = {
   progress: 'ai:progress',
 } as const;
 export const knowledgeChannels = { ask: 'knowledge:ask' } as const;
+export const runtimeChannels = { getMode: 'runtime:get-mode' } as const;
 
 export const sessionTypes = ['CLASS', 'MEETING', 'OTHER'] as const;
 export type SessionTypeDto = (typeof sessionTypes)[number];
@@ -81,6 +82,7 @@ export interface LibraryPageDto {
 }
 
 export interface LectaApi {
+  runtime: { readonly e2e: boolean };
   sessions: {
     create: (input: CreateSessionInput) => Promise<SessionDto>;
     get: (id: string) => Promise<SessionDto>;

@@ -3,12 +3,16 @@ import {
   aiChannels,
   knowledgeChannels,
   recordingChannels,
+  runtimeChannels,
   sessionChannels,
   transcriptionChannels,
   type LectaApi,
 } from '../shared/session-contracts.js';
 
 const api: LectaApi = {
+  runtime: {
+    e2e: ipcRenderer.sendSync(runtimeChannels.getMode) === 'E2E',
+  },
   sessions: {
     create: (input) => ipcRenderer.invoke(sessionChannels.create, input),
     get: (id) => ipcRenderer.invoke(sessionChannels.get, id),

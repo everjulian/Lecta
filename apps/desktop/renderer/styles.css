@@ -58,7 +58,7 @@ p {
 .home-header p,
 .session-identity p {
   margin-bottom: 0;
-  color: #6f7a74;
+  color: #5f6a64;
 }
 .primary-button,
 .record-button {
@@ -103,7 +103,7 @@ p {
 }
 .ask-lecta > div:first-child p {
   margin: 0 0 18px;
-  color: #66736c;
+  color: #59665f;
 }
 .ask-lecta form {
   display: grid;
@@ -137,7 +137,7 @@ p {
   display: flex;
   justify-content: space-between;
   gap: 15px;
-  color: #6f7a74;
+  color: #5f6a64;
   font-size: 12px;
 }
 .knowledge-sources article strong {
@@ -185,7 +185,7 @@ p {
   display: flex;
   align-items: center;
   gap: 7px;
-  color: #7b857f;
+  color: #626d67;
   font-size: 11px;
 }
 .filter-row input {
@@ -236,7 +236,7 @@ p {
 .session-card small,
 .session-card > div,
 .recent-empty {
-  color: #7b857f;
+  color: #626d67;
 }
 .session-card > div {
   display: flex;
@@ -279,7 +279,7 @@ p {
   font-size: 17px;
 }
 .section-heading > span {
-  color: #859089;
+  color: #606b65;
   font-size: 13px;
 }
 .empty-state {
@@ -305,7 +305,7 @@ p {
 }
 .empty-state p {
   max-width: 410px;
-  color: #7b857f;
+  color: #626d67;
   line-height: 1.55;
 }
 .session-list {
@@ -344,7 +344,7 @@ p {
 }
 .session-main small {
   margin-top: 5px;
-  color: #7b857f;
+  color: #626d67;
 }
 .session-meta {
   display: grid;
@@ -496,7 +496,7 @@ legend {
 }
 form > label span {
   float: right;
-  color: #9aa19d;
+  color: #66716b;
   font-size: 11px;
   font-weight: 500;
 }
@@ -514,7 +514,7 @@ input {
   gap: 7px;
   width: min(360px, 100%);
   margin-top: 30px;
-  color: #657169;
+  color: #5f6b63;
   font-size: 12px;
   font-weight: 700;
   text-align: left;
@@ -644,7 +644,7 @@ legend {
   align-items: center;
   gap: 8px;
   margin-top: 12px;
-  color: #66736c;
+  color: #59665f;
   font-size: 13px;
   font-weight: 650;
 }
@@ -680,7 +680,7 @@ legend {
 }
 .mock-note {
   margin-top: 24px;
-  color: #9aa19d;
+  color: #66716b;
   font-size: 11px;
 }
 .transcription-start,
@@ -699,7 +699,7 @@ legend {
 }
 .transcription-start p {
   margin: 6px 0 0;
-  color: #78827c;
+  color: #65706a;
   font-size: 13px;
 }
 .transcription-options {
@@ -711,7 +711,7 @@ legend {
 .transcription-options label {
   display: grid;
   gap: 7px;
-  color: #657169;
+  color: #5f6b63;
   font-size: 12px;
   font-weight: 700;
 }
@@ -817,7 +817,7 @@ legend {
   border: 0;
   border-radius: 9px;
   background: transparent;
-  color: #657169;
+  color: #5f6b63;
   font-weight: 650;
 }
 .material-tabs button.active {
@@ -858,7 +858,7 @@ legend {
 }
 .generate-state p,
 .empty-copy {
-  color: #78827c;
+  color: #65706a;
   line-height: 1.6;
 }
 .generate-state .primary-button {
@@ -932,7 +932,7 @@ legend {
 }
 .moment-list p {
   margin: 5px 0 0;
-  color: #66736c;
+  color: #59665f;
   line-height: 1.5;
 }
 .material-panel audio {
